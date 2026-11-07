@@ -1,0 +1,150 @@
+/* Shared responsive and accessible presentation; export dimensions stay in SVG attributes. */
+[hidden] {
+  display: none !important;
+}
+.series-toggle {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 4px;
+  cursor: pointer;
+}
+.leaflet-control-zoom {
+  display: block;
+}
+html,
+body {
+  min-width: 0;
+  overflow-x: hidden;
+}
+.app {
+  padding: 14px 18px;
+  min-width: 0;
+}
+.card,
+.chart {
+  min-width: 0;
+  margin-top: 0;
+}
+.bar,
+.controls,
+.toolbarRow,
+.arrange {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  min-width: 0;
+  max-width: 100% !important;
+}
+.bar {
+  overflow: visible;
+  align-items: flex-start;
+}
+.controls {
+  gap: 16px !important;
+  width: 100% !important;
+}
+.ctrl {
+  font-size: 12px;
+  grid-template-columns: auto 108px max-content !important;
+}
+.canvas {
+  overflow: auto;
+}
+.canvas > svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: auto;
+}
+.empty {
+  padding: 60px 20px;
+  line-height: 1.6;
+}
+.status.note {
+  display: block;
+  background: #eef5ff;
+  color: #274563;
+  padding: 12px;
+  border-radius: 8px;
+}
+.titlebar {
+  flex-wrap: wrap;
+}
+.diagramTitle,
+.title {
+  min-width: 150px;
+  width: 100%;
+  font-family: inherit;
+}
+.swatch {
+  min-width: 24px;
+  min-height: 24px;
+}
+.tip {
+  white-space: normal;
+  max-width: 280px;
+}
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #5653ff;
+  outline-offset: 3px;
+}
+.keyboard-order {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 12px;
+}
+.keyboard-order select {
+  max-width: 210px;
+  padding: 6px;
+}
+.chart-summary {
+  padding: 10px 20px;
+  font-size: 12px;
+  color: #465463;
+}
+@media (max-width: 600px) {
+  .app {
+    padding: 10px;
+  }
+  .titlebar,
+  .bar,
+  .toolbar {
+    padding: 14px;
+  }
+  .controls {
+    gap: 18px !important;
+  }
+  .ctrl {
+    grid-template-columns: 76px minmax(80px, 1fr) 44px !important;
+    width: 100% !important;
+  }
+  .ctrl input[type="range"] {
+    width: 100% !important;
+  }
+  .mapWrap {
+    height: 440px;
+  }
+  .legend {
+    font-size: 12px;
+  }
+  .btn {
+    min-height: 40px;
+  }
+  .menu {
+    max-width: calc(100vw - 45px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}

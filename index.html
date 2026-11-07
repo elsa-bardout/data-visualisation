@@ -1,1 +1,224 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Data visualisation</title><style>*{box-sizing:border-box}html{scrollbar-gutter:stable}body{margin:0;background:#f7f8fa;color:#17212b;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.shell{width:calc(100% - 36px);max-width:1864px;margin-left:auto;margin-right:auto}.top{position:fixed;top:0;left:0;right:0;z-index:50;padding-top:18px;transform:translateY(0);transition:transform 360ms cubic-bezier(.22,.9,.25,1);pointer-events:none}.top.hidden{transform:translateY(calc(-100% - 18px))}.topin,.sharedData{background:#fff;border:1px solid #e5e9ed;border-radius:16px;box-shadow:0 10px 30px #14283a0d}.topin{padding:14px 20px;display:flex;align-items:center;gap:26px;min-height:78px;pointer-events:auto}.brand{width:220px;flex:0 0 220px}.brand strong{display:block;font-size:20px;line-height:1.2}.credit{display:inline-block;margin-top:5px;font-size:10px;color:#707986;text-decoration:none}.modes{--x:0px;position:relative;display:flex;gap:8px;padding:3px}.indicator{position:absolute;left:3px;top:3px;width:46px;height:46px;border-radius:14px;background:#edf0f2;transform:translateX(var(--x));transition:transform .3s;pointer-events:none}.mode{position:relative;z-index:1;border:0;background:transparent;color:#7a838c;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;cursor:pointer}.mode svg{width:27px;height:27px;stroke:currentColor;fill:none;stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round}.mode.active{color:#303b45}.page{padding-top:114px}.sharedData{overflow:hidden}.sharedHead{padding:18px 20px 12px;display:flex;justify-content:space-between;gap:12px}.sharedHead h1{margin:0 0 4px;font-size:20px}.sharedHead p,.sharedHint{color:#707986}.sharedHead p{margin:0;font-size:13px}.sharedReset{border:1px solid #e0e5e9;background:#fff;color:#59636e;border-radius:10px;width:32px;height:32px;display:grid;place-items:center;cursor:pointer}.sharedReset svg{width:16px;height:16px}.sharedGridbox{margin:0 14px 10px;min-height:34px;max-height:260px;overflow:auto;border:1px solid #e5e9ed;border-radius:10px}.sharedGrid{border-collapse:collapse;min-width:100%;width:max-content;font-size:12px}.sharedGrid td{min-width:140px;height:31px;padding:6px 9px;border-right:1px solid #e5e9ed;border-bottom:1px solid #e5e9ed;white-space:nowrap}.sharedGrid tr:first-child td{font-weight:700;background:#f8fafb;position:sticky;top:0;z-index:2}.sharedGrid td:focus{outline:2px solid #8dc1f5;outline-offset:-2px}.sharedGrid .rn{min-width:36px!important;width:36px;text-align:center;color:#98a0a8;background:#fafbfc;position:sticky;left:0;z-index:3;font-weight:400!important}.sharedGrid td.cellSelected{background:#dceeff!important;box-shadow:inset 0 0 0 1px #8dc1f5}.sharedHint{padding:0 20px 15px;font-size:11px}.stage{width:100%}.panel{display:none;width:100%;height:760px;border:0;background:#f7f8fa;overflow:hidden}.panel.active{display:block}@media(max-width:700px){.shell{width:calc(100% - 20px)}.top{padding-top:10px}.brand{width:145px;flex-basis:145px}.modes{gap:2px}.mode,.indicator{width:40px;height:40px}.page{padding-top:98px}.panel{height:720px}}</style></head><body><header class="top"><div class="topin shell"><div class="brand"><strong id="activeTitle">Sankey builder</strong><a class="credit" href="https://uk.linkedin.com/in/elsabardout" target="_blank" rel="noopener">Made by Elsa Bardout</a></div><nav class="modes"><div class="indicator"></div><button class="mode active" data-mode="sankey" title="Sankey builder"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="5" height="5"/><rect x="16.5" y="3" width="5" height="5"/><rect x="16.5" y="16" width="5" height="5"/><path d="M7.5 6.5H16.5M7.5 6.5C13 6.5 11 18.5 16.5 18.5"/></svg></button><button class="mode" data-mode="donut" title="Donut chart builder"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9h-6a3 3 0 1 1-3-3z"/><path d="M14 3.2A9 9 0 0 1 20.8 10H15a3 3 0 0 0-1-1z"/></svg></button><button class="mode" data-mode="bar" title="Bar chart builder"><svg viewBox="0 0 24 24"><path d="M4 20V9h4v11M10 20V4h4v16M16 20v-7h4v7M2 20h20"/></svg></button><button class="mode" data-mode="line" title="Line chart builder"><svg viewBox="0 0 24 24"><path d="M3 18 9 11l4 3 8-9M3 20h18"/></svg></button><button class="mode" data-mode="scatter" title="Scatter plot builder"><svg viewBox="0 0 24 24"><path d="M3 3v17h18"/><circle cx="8" cy="14" r="1.5"/><circle cx="12" cy="9" r="1.5"/><circle cx="16" cy="12" r="1.5"/><circle cx="19" cy="6" r="1.5"/></svg></button><button class="mode" data-mode="map" title="Map builder"><svg viewBox="0 0 24 24"><path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3-6-3Z"/><path d="M9 3v15M15 6v15"/></svg></button></nav></div></header><div class="page"><section class="sharedData shell"><div class="sharedHead"><div><h1>Data</h1><p>Paste an Excel range into the first cell. The selected chart will interpret the same table automatically.</p></div><button id="sharedReset" class="sharedReset" title="Reset everything"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5"/></svg></button></div><div class="sharedGridbox"><table id="sharedGrid" class="sharedGrid"></table></div><div class="sharedHint">The data stays in place when you switch chart type. If the structure is unsuitable, the selected chart will explain what it needs.</div></section><main class="stage"><iframe class="panel active" data-mode="sankey" title="Sankey builder" src="./builders/sankey.html" scrolling="no"></iframe><iframe class="panel" data-mode="donut" title="Donut chart builder" src="./builders/donut.html" scrolling="no"></iframe><iframe class="panel" data-mode="bar" title="Bar chart builder" src="./builders/bar.html" scrolling="no"></iframe><iframe class="panel" data-mode="line" title="Line chart builder" src="./builders/line.html" scrolling="no"></iframe><iframe class="panel" data-mode="scatter" title="Scatter plot builder" src="./builders/scatter.html" scrolling="no"></iframe><iframe class="panel" data-mode="map" title="Map builder" src="./builders/map.html" scrolling="no"></iframe></main></div><script>const titles={"sankey": "Sankey builder", "donut": "Donut chart builder", "bar": "Bar chart builder", "line": "Line chart builder", "scatter": "Scatter plot builder", "map": "Map builder"},frames=[...document.querySelectorAll('.panel')];const buttons=[...document.querySelectorAll('.mode')],nav=document.querySelector('.modes'),title=document.querySelector('#activeTitle'),topbar=document.querySelector('.top');let M=[Array(8).fill('')],anchor=null,focus=null,selecting=false,lastY=scrollY;const clean=v=>String(v??'').trim(),activeFrame=()=>document.querySelector('.panel.active');function normalise(){while(M.length>1&&M.at(-1).every(x=>!clean(x))&&M.at(-2).every(x=>!clean(x)))M.pop();if(M.some(r=>r.some(clean))&&!M.at(-1).every(x=>!clean(x)))M.push(Array(M[0].length).fill(''));let n=Math.max(8,...M.map(r=>r.length));M.forEach(r=>{while(r.length<n)r.push('')})}function bounds(){return anchor&&focus?{r1:Math.min(anchor.r,focus.r),r2:Math.max(anchor.r,focus.r),c1:Math.min(anchor.c,focus.c),c2:Math.max(anchor.c,focus.c)}:null}function paint(){let b=bounds();document.querySelectorAll('#sharedGrid td[data-r]').forEach(td=>{let r=+td.dataset.r,c=+td.dataset.c;td.classList.toggle('cellSelected',!!b&&r>=b.r1&&r<=b.r2&&c>=b.c1&&c<=b.c2)})}function renderGrid(){normalise();let t=document.querySelector('#sharedGrid');t.innerHTML='';M.forEach((r,i)=>{let tr=t.insertRow(),rn=tr.insertCell();rn.className='rn';rn.textContent=i||'';r.forEach((v,j)=>{let q=tr.insertCell();q.contentEditable=true;q.textContent=v;q.dataset.r=i;q.dataset.c=j;q.onmousedown=e=>{if(e.button!==0)return;if(e.shiftKey&&anchor)focus={r:i,c:j};else anchor=focus={r:i,c:j};selecting=true;paint()};q.onmouseenter=()=>{if(selecting){focus={r:i,c:j};paint()}};q.onpaste=paste;q.oninput=()=>{M[i][j]=q.textContent.trim();push()}})})}function paste(e){e.preventDefault();let sr=+e.currentTarget.dataset.r,sc=+e.currentTarget.dataset.c,a=e.clipboardData.getData('text/plain').replace(/\r/g,'').replace(/\n$/,'').split('\n').map(r=>r.split('\t')),nc=sc+Math.max(...a.map(r=>r.length));while(M.length<sr+a.length)M.push([]);M.forEach(r=>{while(r.length<nc)r.push('')});a.forEach((r,i)=>r.forEach((v,j)=>M[sr+i][sc+j]=v));renderGrid();push()}function push(frame=activeFrame()){frame?.contentWindow?.chartBridge?.setData?.(M)}function move(b){nav.style.setProperty('--x',(b.offsetLeft-3)+'px')}function activate(b){buttons.forEach(x=>x.classList.toggle('active',x===b));frames.forEach(f=>f.classList.toggle('active',f.dataset.mode===b.dataset.mode));title.textContent=titles[b.dataset.mode];move(b);let f=activeFrame(),send=()=>push(f);if(f.contentWindow.chartBridge)send();else f.addEventListener('load',send,{once:true});history.replaceState(null,'','#'+b.dataset.mode)}buttons.forEach(b=>{b.onclick=()=>activate(b);b.onmouseenter=()=>title.textContent=titles[b.dataset.mode];b.onmouseleave=()=>title.textContent=titles[document.querySelector('.mode.active').dataset.mode]});frames.forEach(f=>f.addEventListener('load',()=>{if(f.classList.contains('active'))push(f)}));document.addEventListener('mouseup',()=>selecting=false);document.addEventListener('keydown',e=>{let b=bounds();if((e.key==='Delete'||e.key==='Backspace')&&b){e.preventDefault();for(let r=b.r1;r<=b.r2;r++)for(let c=b.c1;c<=b.c2;c++)M[r][c]='';anchor=focus=null;renderGrid();push()}if(e.key==='Escape'){anchor=focus=null;paint()}});document.querySelector('#sharedReset').onclick=()=>{M=[Array(8).fill('')];anchor=focus=null;renderGrid();frames.forEach(f=>f.contentWindow?.chartBridge?.resetAll?.());push()};addEventListener('resize',()=>move(document.querySelector('.mode.active')));addEventListener('scroll',()=>{const y=scrollY,down=y>lastY+4,up=y<lastY-4;if(y<70||up)topbar.classList.remove('hidden');else if(down&&y>120)topbar.classList.add('hidden');lastY=y},{passive:true});renderGrid();requestAnimationFrame(()=>move(document.querySelector('.mode.active')));let start=location.hash.slice(1);if(start)document.querySelector('.mode[data-mode="'+start+'"]')?.click();</script></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Turn spreadsheet data into editable charts and maps. Explore sample data, customise your chart, and export SVG, PNG or HTML."
+    />
+    <title>Data visualisation</title>
+    <link rel="stylesheet" href="assets/app.css" />
+    <script defer src="assets/shared.js"></script>
+    <script defer src="assets/app.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#data-heading">Skip to data</a>
+    <header class="top">
+      <div class="topin shell">
+        <div class="brand">
+          <strong>Data visualisation</strong
+          ><a
+            class="credit"
+            href="https://uk.linkedin.com/in/elsabardout"
+            target="_blank"
+            rel="noopener"
+            >Made by Elsa Bardout</a
+          >
+        </div>
+        <nav role="tablist" aria-label="Chart type">
+          <button
+            class="mode"
+            role="tab"
+            id="tab-sankey"
+            data-mode="sankey"
+            aria-controls="panel-sankey"
+            aria-selected="false"
+          >
+            Sankey</button
+          ><button
+            class="mode"
+            role="tab"
+            id="tab-donut"
+            data-mode="donut"
+            aria-controls="panel-donut"
+            aria-selected="false"
+          >
+            Donut</button
+          ><button
+            class="mode"
+            role="tab"
+            id="tab-bar"
+            data-mode="bar"
+            aria-controls="panel-bar"
+            aria-selected="false"
+          >
+            Bar</button
+          ><button
+            class="mode"
+            role="tab"
+            id="tab-line"
+            data-mode="line"
+            aria-controls="panel-line"
+            aria-selected="false"
+          >
+            Line</button
+          ><button
+            class="mode"
+            role="tab"
+            id="tab-scatter"
+            data-mode="scatter"
+            aria-controls="panel-scatter"
+            aria-selected="false"
+          >
+            Scatter</button
+          ><button
+            class="mode"
+            role="tab"
+            id="tab-map"
+            data-mode="map"
+            aria-controls="panel-map"
+            aria-selected="false"
+          >
+            Map
+          </button>
+        </nav>
+      </div>
+    </header>
+    <main>
+      <div class="shell">
+        <section class="card" aria-labelledby="data-heading">
+          <div class="data-head">
+            <div>
+              <h1 id="data-heading" tabindex="-1">Build a Sankey chart</h1>
+              <p class="muted">
+                Paste a spreadsheet, check its columns, then customise and
+                download your chart.
+              </p>
+            </div>
+            <button id="sample" class="primary">Try sample data</button>
+          </div>
+          <div class="guide"><p id="guide"></p></div>
+          <div class="actions">
+            <label class="file-button"
+              >Import CSV / TSV<input
+                id="import-data"
+                type="file"
+                accept=".csv,.tsv,.txt" /></label
+            ><button id="undo" disabled>Undo</button
+            ><button id="redo" disabled>Redo</button
+            ><button id="add-row">Add row</button
+            ><button id="add-column">Add column</button
+            ><button id="clear">Reset project</button
+            ><button id="save">Save project</button
+            ><label class="file-button"
+              >Open project<input id="open-project" type="file" accept=".json"
+            /></label>
+          </div>
+          <div class="gridbox">
+            <table
+              id="grid"
+              class="grid"
+              aria-label="Editable source data"
+            ></table>
+          </div>
+          <p class="hint">
+            Paste into any cell. Tab moves between cells; Enter moves down.
+            Backspace edits text. Use Delete with Shift selected cells to clear
+            a range. Undo restores edits and resets.
+          </p>
+          <details class="mapping">
+            <summary id="mapping-summary">Check column interpretation</summary>
+            <p id="interpretation" class="hint"></p>
+            <label
+              ><input id="mapping-enabled" type="checkbox" /> Choose columns
+              explicitly</label
+            >
+            <div id="mapping-fields" class="mapping-fields"></div>
+            <p class="hint">
+              Automatic mode supports wide tables and multiple series. Explicit
+              mapping uses the selected columns and keeps your source table
+              intact.
+            </p>
+          </details>
+          <div id="diagnostics" class="diagnostics" role="status"></div>
+          <div
+            id="notice"
+            class="notice"
+            role="status"
+            aria-live="polite"
+          ></div>
+          <div class="storage">
+            <label
+              ><input id="remember" type="checkbox" /> Remember this project on
+              this device</label
+            ><span id="storage-note"
+              >Use Save project to keep your data and chart settings.</span
+            >
+          </div>
+        </section>
+      </div>
+      <section class="stage" aria-label="Chart preview">
+        <iframe
+          class="panel"
+          id="panel-sankey"
+          data-mode="sankey"
+          role="tabpanel"
+          aria-labelledby="tab-sankey"
+          title="sankey builder"
+          data-src="builders/sankey.html"
+        ></iframe
+        ><iframe
+          class="panel"
+          id="panel-donut"
+          data-mode="donut"
+          role="tabpanel"
+          aria-labelledby="tab-donut"
+          title="donut builder"
+          data-src="builders/donut.html"
+        ></iframe
+        ><iframe
+          class="panel"
+          id="panel-bar"
+          data-mode="bar"
+          role="tabpanel"
+          aria-labelledby="tab-bar"
+          title="bar builder"
+          data-src="builders/bar.html"
+        ></iframe
+        ><iframe
+          class="panel"
+          id="panel-line"
+          data-mode="line"
+          role="tabpanel"
+          aria-labelledby="tab-line"
+          title="line builder"
+          data-src="builders/line.html"
+        ></iframe
+        ><iframe
+          class="panel"
+          id="panel-scatter"
+          data-mode="scatter"
+          role="tabpanel"
+          aria-labelledby="tab-scatter"
+          title="scatter builder"
+          data-src="builders/scatter.html"
+        ></iframe
+        ><iframe
+          class="panel"
+          id="panel-map"
+          data-mode="map"
+          role="tabpanel"
+          aria-labelledby="tab-map"
+          title="map builder"
+          data-src="builders/map.html"
+        ></iframe>
+      </section>
+    </main>
+    <footer class="shell">
+      Chart data is processed in your browser. Maps send location fields to
+      Postcodes.io or Esri for geographic lookup; basemap providers receive tile
+      requests. Avoid personal or sensitive location data.
+    </footer>
+  </body>
+</html>

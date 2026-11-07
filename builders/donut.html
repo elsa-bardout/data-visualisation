@@ -1,24 +1,121 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Donut chart builder</title><script src="https://d3js.org/d3.v7.min.js"></script><style>
-*{box-sizing:border-box}body{margin:0;background:#f7f8fa;color:#17212b;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:1900px;margin:auto;padding:18px}.card{background:#fff;border:1px solid #e5e9ed;border-radius:16px;box-shadow:0 10px 30px #14283a0d;overflow:hidden}.head{padding:18px 20px 12px;display:flex;justify-content:space-between;gap:12px}.head h1{margin:0 0 4px;font-size:20px}.head p,.hint{color:#707986}.head p{margin:0;font-size:13px}.gridbox{margin:0 14px 10px;max-height:260px;overflow:auto;border:1px solid #e5e9ed;border-radius:10px}table{border-collapse:collapse;min-width:100%;width:max-content;font-size:12px}td{min-width:140px;height:31px;padding:6px 9px;border-right:1px solid #e5e9ed;border-bottom:1px solid #e5e9ed;white-space:nowrap}tr:first-child td{font-weight:700;background:#f8fafb;position:sticky;top:0;z-index:2}td:focus{outline:2px solid #8dc1f5;outline-offset:-2px}.rn{min-width:36px!important;width:36px;text-align:center;color:#98a0a8;background:#fafbfc;position:sticky;left:0;z-index:3;font-weight:400!important}.hint{padding:0 20px 15px;font-size:11px}.chart{margin-top:14px}.titlebar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 20px 8px}.diagramTitle{margin:0;min-width:0;font-size:20px;font-weight:700;border:0;border-bottom:1px dashed transparent;outline:0;padding:2px 0;background:transparent;color:#17212b;flex:1}.diagramTitle:hover,.diagramTitle:focus{border-bottom-color:#9eabb5}.bar{display:flex;align-items:center;gap:18px;padding:9px 20px 10px;border-bottom:1px solid #e5e9ed;overflow-x:auto}.controls{display:flex;gap:17px;align-items:center}.ctrl{display:grid;grid-template-columns:auto 108px minmax(46px,max-content);gap:7px;align-items:center;font-size:11px;color:#707986}.ctrl b{color:#17212b;font-weight:500;white-space:nowrap}#periodCtrl{grid-template-columns:auto 154px max-content}#periodCtrl input{width:154px}input[type=range]{appearance:none;width:108px;height:4px;border-radius:9px;background:#dce3e8}input[type=range]::-webkit-slider-thumb{appearance:none;width:15px;height:15px;border-radius:50%;background:#172b3f;border:3px solid #fff;box-shadow:0 1px 5px #0003}.reset{border:1px solid #e0e5e9;background:#fff;color:#59636e;border-radius:8px;width:32px;height:32px;display:grid;place-items:center;cursor:pointer}.btn{border:1px solid #e0e5e9;background:#fff;border-radius:9px;padding:8px 12px;font:600 12px inherit;cursor:pointer}.primary{background:#172b3f;color:#fff;border-color:#172b3f}.btn:disabled{opacity:.4}.menuWrap{position:relative}.menu{display:none;position:absolute;right:0;top:39px;width:200px;background:#fff;border:1px solid #e1e6ea;border-radius:10px;box-shadow:0 12px 30px #0002;padding:5px;z-index:8}.menu.open{display:block}.menu button{width:100%;border:0;background:#fff;text-align:left;padding:9px;border-radius:7px;cursor:pointer}.menu button:hover{background:#f3f6f8}.legend{display:flex;gap:14px;flex-wrap:wrap;padding:11px 16px;border-bottom:1px solid #e5e9ed;font-size:11px;color:#59636e}.legend label{display:flex;align-items:center;gap:6px;padding:4px 7px;border-radius:7px;cursor:pointer}.swatch{width:19px;height:19px;border:2px solid #fff;border-radius:6px;box-shadow:0 0 0 1px #d7dde2;cursor:pointer}.canvas{overflow:auto;background:#fff;text-align:center}#svg{display:block;margin:auto}.empty{padding:80px;text-align:center;color:#7c858f;font-size:13px}.slice{stroke:#fff;transition:opacity .15s}.slice:hover{opacity:.82}.label{font-size:12px;font-weight:700;fill:#17212b}.value{font-size:11px;fill:#707986}.lab{cursor:pointer}.lab.active .label,.lab.active .value{font-weight:700}.leader.active{stroke:#6f7d88;stroke-width:1.4}.leader{fill:none;stroke:#aeb8c0;stroke-width:1}.dropPreview{stroke:#172b3f;stroke-width:2;stroke-dasharray:5 4;pointer-events:none}.centreTotal{font-size:24px;font-weight:800;text-anchor:middle;fill:#17212b}.centreLabel{font-size:11px;text-anchor:middle;fill:#707986;text-transform:uppercase}.dim{opacity:.12!important}.tip{position:fixed;pointer-events:none;background:#17212b;color:#fff;padding:8px 10px;border-radius:8px;font-size:12px;opacity:0;z-index:9}.colourPop{position:fixed;z-index:20;background:#fff;border:1px solid #d7dde2;border-radius:10px;box-shadow:0 12px 30px #0002;padding:10px;display:none;gap:8px}.colourPop.open{display:flex}.hex{width:86px;border:1px solid #ccd4da;border-radius:7px;padding:7px 8px;font:600 12px monospace}.nativeColour{width:34px;height:32px;border:0}
-.arrange{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;margin-top:8px}.bar{align-items:flex-start;flex-wrap:wrap}.btn.active{background:#eaf0ff;border-color:#9eacff;color:#3538a7}</style></head><body><div class="app"><div aria-hidden="true" style="display:none"><button id="reset"></button><table id="grid"></table></div><div id="status" class="status"></div><section class="card chart"><div class="titlebar"><input id="diagramTitle" class="diagramTitle" value="Services by period"><div class="menuWrap"><button id="share" class="btn primary" disabled aria-label="Download"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg>Download <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m3 4.5 3 3 3-3"/></svg></button><div id="menu" class="menu"><button data-x="svg">Editable SVG</button><button data-x="png">PNG image</button><button data-x="html">Interactive HTML</button></div></div></div><div class="bar"><div class="controls"><div class="ctrl">Size<input id="size" type="range" min="260" max="760" step="20" value="380"><b id="sizev">380</b></div><div class="ctrl">Spacing<input id="p" type="range" min="0" max="2" step="0.1" value="0.5"><b id="pv">0.5</b></div><div class="ctrl">Hole<input id="hole" type="range" min="25" max="80" value="58"><b id="holev">58%</b></div><div id="periodCtrl" class="ctrl" style="display:none">Period<input id="period" type="range"><b id="periodLabel"></b></div></div><div class="arrange"><button id="typeToggle" class="btn active">Donut</button><button id="labelToggle" class="btn active">Value + %</button></div></div><div id="legend" class="legend"></div><div class="canvas"><div id="empty" class="empty">The donut chart will appear here.</div><svg id="svg" style="display:none"></svg></div></section></div><div id="tip" class="tip"></div><div id="colourPop" class="colourPop"><input id="hex" class="hex" maxlength="7"><input id="nativeColour" class="nativeColour" type="color"></div><script>
-let M=[Array(5).fill('')],timer,data=[],periodCols=[],activePeriod=0,titleEdited=false,chartType='donut',labelMode='both';const $=s=>document.querySelector(s),S=d3.select('#svg'),tip=d3.select('#tip'),palette=['#5653FF','#00B188','#F8CA1C','#F56DAB','#FA9C28','#EF431B','#844AFF','#2B82C4','#3EB86D','#F57022','#B240FF','#7CBE52','#FF5C67','#F9B322','#BAC437'],C={};
-function grid(){while(M.length>1&&M.at(-1).every(x=>!String(x).trim())&&M.at(-2).every(x=>!String(x).trim()))M.pop();if(M.some(r=>r.some(x=>String(x).trim()))&&!M.at(-1).every(x=>!String(x).trim()))M.push(Array(M[0].length).fill(''));let n=Math.max(5,...M.map(r=>r.length));M.forEach(r=>{while(r.length<n)r.push('')});let t=$('#grid');t.innerHTML='';M.forEach((r,i)=>{let tr=t.insertRow(),z=tr.insertCell();z.className='rn';z.textContent=i||'';r.forEach((v,j)=>{let q=tr.insertCell();q.contentEditable=true;q.textContent=v;q.dataset.r=i;q.dataset.c=j;q.onpaste=paste;q.oninput=()=>{M[i][j]=q.textContent.trim();refresh()}})})}
-function paste(e){e.preventDefault();let sr=+e.currentTarget.dataset.r,sc=+e.currentTarget.dataset.c,a=e.clipboardData.getData('text/plain').replace(/\r/g,'').replace(/\n$/,'').split('\n').map(r=>r.split('\t')),nc=sc+Math.max(...a.map(r=>r.length));while(M.length<sr+a.length)M.push([]);M.forEach(r=>{while(r.length<nc)r.push('')});a.forEach((r,i)=>r.forEach((v,j)=>M[sr+i][sc+j]=v));grid();refresh(0)}
-function num(v){let s=String(v??'').replace(/,/g,'').replace(/[^0-9.\-]/g,'');return s?Number(s)||0:0}function refresh(ms=100){clearTimeout(timer);timer=setTimeout(build,ms)}function periodName(v){return String(v||'').trim().replace(/_/g,' ')}
-function getPeriod(j){let a=new Map();M.slice(1).forEach(r=>{let name=String(r[0]||'').trim(),value=num(r[j]);if(name&&name.toUpperCase()!=='TOTAL'&&value>0)a.set(name,(a.get(name)||0)+value)});return [...a].map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value||a.name.localeCompare(b.name))}
-function build(){let u=M.filter(r=>r.some(x=>String(x).trim()));if(u.length<2)return clear();let h=u[0];periodCols=h.map((x,j)=>({j,label:String(x||'').trim()})).filter(x=>x.j!==0&&x.label&&u.slice(1).some(r=>num(r[x.j])>0));if(!periodCols.length)return clear();activePeriod=Math.min(activePeriod,periodCols.length-1);data=getPeriod(periodCols[activePeriod].j);if(!data.length)return clear();data.forEach(d=>{if(!C[d.name])C[d.name]=palette[Object.keys(C).length%palette.length]});$('#periodCtrl').style.display=periodCols.length>1?'grid':'none';$('#period').min=0;$('#period').max=periodCols.length-1;$('#period').value=activePeriod;$('#periodLabel').textContent=periodName(periodCols[activePeriod].label);if(!titleEdited)$('#diagramTitle').value='Services · '+periodName(periodCols[activePeriod].label);render()}
-function clear(){data=[];S.style('display','none').selectAll('*').remove();$('#empty').style.display='block';$('#legend').innerHTML='';$('#share').disabled=true}
-function spread(pie,r){let groups={left:[],right:[]};pie.filter(d=>d.endAngle-d.startAngle>.025).forEach(d=>{let a=(d.startAngle+d.endAngle)/2,k=Math.sin(a)>=0?'right':'left';groups[k].push({d,a,y:-Math.cos(a)*(r+38)})});for(const k of ['left','right']){let q=groups[k].sort((a,b)=>a.y-b.y),gap=27,min=-(r+45),max=r+45;for(let i=1;i<q.length;i++)q[i].y=Math.max(q[i].y,q[i-1].y+gap);if(q.length&&q.at(-1).y>max){let z=q.at(-1).y-max;q.forEach(x=>x.y-=z)}for(let i=q.length-2;i>=0;i--)q[i].y=Math.min(q[i].y,q[i+1].y-gap);if(q.length&&q[0].y<min){let z=min-q[0].y;q.forEach(x=>x.y+=z)}}return [...groups.left,...groups.right]}
-function draw(target,D,interactive=false){let size=D.size,longest=d3.max((D.data||[]).map(d=>String(d.name||'').length))||0,W=Math.round(Math.max(size*2.2,size+390+longest*8)),H=Math.round(size*1.28),cx=W/2,cy=H/2,r=Math.max(54,Math.min(W-440,H-140)/2),total=d3.sum(D.data,d=>d.value),pie=d3.pie().sort(null).startAngle(-Math.PI/4).endAngle(7*Math.PI/4).value(d=>d.value).padAngle(Math.min(.18,D.gap*Math.PI/180))(D.data),arc=d3.arc().innerRadius(r*D.hole/100).outerRadius(r).cornerRadius(Math.min(8,D.gap*1.1));target.attr('width',W).attr('height',H).attr('viewBox',`0 0 ${W} ${H}`).selectAll('*').remove();let g=target.append('g').attr('transform',`translate(${cx},${cy})`),paths=g.selectAll('.slice').data(pie).join('path').attr('class','slice').attr('d',arc).attr('fill',d=>D.colors[d.data.name]||'#888').attr('stroke-width',Math.max(1,D.gap*.65)).on('mouseenter',(e,d)=>highlight(d,true)).on('mousemove',e=>tip.style('left',e.clientX+12+'px').style('top',e.clientY+8+'px')).on('mouseleave',()=>highlight(null,false));let labs=spread(pie,r),lx=r+74;g.selectAll('.leader').data(labs).join('polyline').attr('class','leader').attr('points',x=>{let side=Math.sin(x.a)>=0?1:-1,start=[Math.sin(x.a)*(r+2),-Math.cos(x.a)*(r+2)],radial=[Math.sin(x.a)*(r+26),-Math.cos(x.a)*(r+26)],elbow=[side*(r+50),x.y],end=[side*(lx-7),x.y];return[start,radial,elbow,end]});let l=g.selectAll('.lab').data(labs).join('g').attr('class','lab').attr('transform',x=>`translate(${(x.a<Math.PI?1:-1)*lx},${x.y})`).attr('text-anchor',x=>Math.sin(x.a)>=0?'start':'end');l.append('text').attr('class','label').attr('y',-3).text(x=>x.d.data.name);l.append('text').attr('class','value').attr('y',12).text(x=>labelMode==='value'?x.d.data.value.toLocaleString():labelMode==='percent'?(x.d.data.value/total*100).toFixed(1)+'%':`${x.d.data.value.toLocaleString()} · ${(x.d.data.value/total*100).toFixed(1)}%`);l.on('mouseenter',(e,x)=>highlight(x.d,true)).on('mousemove',e=>tip.style('left',e.clientX+12+'px').style('top',e.clientY+8+'px')).on('mouseleave',()=>highlight(null,false));let dropIndex=null,preview=g.append('line').attr('class','dropPreview').style('display','none');l.call(d3.drag().clickDistance(3).on('start',function(e,x){dropIndex=data.indexOf(x.d.data);preview.style('display',null)}).on('drag',function(e,x){let ordered=labs.slice().sort((a,b)=>a.y-b.y),nearest=ordered.reduce((best,z)=>Math.abs(z.y-e.y)<Math.abs(best.y-e.y)?z:best,ordered[0]);dropIndex=data.indexOf(nearest.d.data);let side=Math.sin(nearest.a)>=0?1:-1;preview.attr('x1',side*(lx-18)).attr('x2',side*(lx+18)).attr('y1',nearest.y+8).attr('y2',nearest.y+8)}).on('end',function(e,x){preview.style('display','none');let from=data.indexOf(x.d.data);if(dropIndex!=null&&from>=0&&dropIndex>=0&&from!==dropIndex){let item=data.splice(from,1)[0];data.splice(dropIndex,0,item);render()}dropIndex=null}));function highlight(d,on){paths.classed('dim',x=>on&&x!==d);g.selectAll('.lab').classed('active',x=>on&&x.d===d);g.selectAll('.leader').classed('active',x=>on&&x.d===d);if(on&&d)tip.style('opacity',1).html(`<b>${d.data.name}</b><br>${d.data.value.toLocaleString()} · ${(d.data.value/total*100).toFixed(1)}%`);else tip.style('opacity',0)}g.append('text').attr('class','centreTotal').attr('x',0).attr('y',2).attr('text-anchor','middle').text(total.toLocaleString());g.append('text').attr('class','centreLabel').attr('x',0).attr('y',24).attr('text-anchor','middle').text('Total')}
-function render(){let D={data,colors:C,size:+$('#size').value,gap:+$('#p').value,hole:chartType==='pie'?0:+$('#hole').value};$('#sizev').textContent=D.size;$('#pv').textContent=D.gap;$('#holev').textContent=D.hole+'%';$('#empty').style.display='none';S.style('display','block');draw(S,D);legend();$('#share').disabled=false}
-function legend(){let b=$('#legend');b.innerHTML='';data.forEach(x=>{let l=document.createElement('label'),i=document.createElement('button');i.className='swatch';i.style.background=C[x.name];i.onclick=e=>openColour(e,x.name);l.append(i,document.createTextNode(x.name));b.append(l)})}function openColour(e,n){e.preventDefault();let pop=$('#colourPop'),hex=$('#hex'),native=$('#nativeColour'),r=e.currentTarget.getBoundingClientRect();pop.style.left=Math.min(innerWidth-150,r.left)+'px';pop.style.top=r.bottom+7+'px';pop.classList.add('open');hex.value=C[n];native.value=C[n];let apply=v=>{if(/^#[0-9a-f]{6}$/i.test(v)){C[n]=v;render()}};hex.oninput=()=>apply(hex.value);native.oninput=()=>{hex.value=native.value;apply(native.value)}}
-function svgText(){let c=$('#svg').cloneNode(true);c.setAttribute('xmlns','http://www.w3.org/2000/svg');let st=document.createElementNS('http://www.w3.org/2000/svg','style');st.textContent='svg{background:transparent}text{font-family:Inter,Segoe UI,sans-serif}.label{font-size:12px;font-weight:700;fill:#17212b}.value,.centreLabel{font-size:11px;fill:#707986}.centreTotal{font-size:24px;font-weight:800;fill:#17212b;text-anchor:middle}.centreLabel{text-anchor:middle}.leader{fill:none;stroke:#aeb8c0;stroke-width:1}.dropPreview{stroke:#172b3f;stroke-width:2;stroke-dasharray:5 4;pointer-events:none}.slice{stroke:#fff}';c.prepend(st);return new XMLSerializer().serializeToString(c)}function base(){return ($('#diagramTitle').value||'donut chart').replace(/[\\/:*?"<>|]+/g,'-')}function dl(b,n){let u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(u),500)}function png(){let im=new Image(),u=URL.createObjectURL(new Blob([svgText()],{type:'image/svg+xml'}));im.onload=()=>{let c=document.createElement('canvas');c.width=im.width*2;c.height=im.height*2;let x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);c.toBlob(b=>dl(b,base()+'.png'));URL.revokeObjectURL(u)};im.src=u}
-function interactive(){let D={title:$('#diagramTitle').value,periods:periodCols.map(p=>({label:p.label,data:getPeriod(p.j)})),activePeriod,colors:C,size:+$('#size').value,gap:+$('#p').value,hole:+$('#hole').value},j=JSON.stringify(D).replace(/</g,'\\u003c'),doc=`<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width"><script src="https://d3js.org/d3.v7.min.js"><\/script><style>body{margin:0;background:#f7f8fa;font-family:Inter,Segoe UI,sans-serif;color:#17212b}.card{margin:18px;background:#fff;border:1px solid #e5e9ed;border-radius:16px;overflow:auto}.top{display:flex;justify-content:space-between;padding:20px}.title{font-size:24px;font-weight:800}.period{display:flex;align-items:center;gap:9px;font-size:11px;color:#707986;white-space:nowrap}.period input{appearance:none;width:154px;height:4px;border:0;border-radius:9px;background:#dce3e8}.period input::-webkit-slider-thumb{appearance:none;width:15px;height:15px;border-radius:50%;background:#172b3f;border:3px solid #fff;box-shadow:0 1px 5px #0003}.period b{color:#17212b;font-weight:500}.chart{text-align:center}svg{display:block;margin:auto;background:transparent}.slice{stroke:#fff}.label{font-size:12px}.lab{cursor:pointer}.lab.active .label,.lab.active .value{font-weight:700}.leader.active{stroke:#6f7d88;stroke-width:1.4}.value,.centreLabel{font-size:11px;fill:#707986}.centreTotal{font-size:24px;font-weight:800;text-anchor:middle}.centreLabel{text-anchor:middle}.leader{fill:none;stroke:#aeb8c0}.tip{position:fixed;background:#17212b;color:#fff;padding:8px;border-radius:8px;opacity:0}</style><style>
-.btn,.curveBtn{border-radius:13px!important}.reset{border-radius:10px!important}
-.menuWrap{position:relative!important;display:inline-block!important;flex:0 0 auto!important;width:auto!important}
-.menu{width:158px!important;min-width:158px!important;border-radius:13px!important}
-.menu button{display:block!important;width:100%!important;min-width:0!important;padding:9px!important;border-radius:9px!important;white-space:nowrap!important}
-#curveMenu{width:108px!important;min-width:108px!important}.primary{width:auto!important;max-width:max-content!important}
-</style></head><body><div class=card><div class=top><div class=title></div><div class=period><span>Period</span><input id=p type=range><b id=pl></b></div></div><div class=chart><svg></svg></div></div><div class=tip></div><script>const D=${j},s=d3.select('svg'),tip=d3.select('.tip'),sl=document.querySelector('#p');document.querySelector('.title').textContent=D.title;sl.min=0;sl.max=D.periods.length-1;sl.value=D.activePeriod;document.querySelector('.period').style.display=D.periods.length>1?'flex':'none';${spread.toString()}${draw.toString()}function go(i){document.querySelector('#pl').textContent=D.periods[i].label;draw(s,{...D,data:D.periods[i].data},true)}sl.oninput=e=>go(+e.target.value);go(+sl.value);<\/script></body></html>`;dl(new Blob([doc],{type:'text/html'}),base()+'.html')}
-$('#typeToggle').onclick=()=>{chartType=chartType==='donut'?'pie':'donut';$('#typeToggle').textContent=chartType==='donut'?'Donut':'Pie';$('#hole').closest('.ctrl').style.display=chartType==='pie'?'none':'grid';render()};$('#labelToggle').onclick=()=>{let a=['both','value','percent'],i=a.indexOf(labelMode);labelMode=a[(i+1)%3];$('#labelToggle').textContent=labelMode==='both'?'Value + %':labelMode==='value'?'Value':'%';render()};['size','p','hole'].forEach(x=>$('#'+x).oninput=render);$('#period').oninput=e=>{let t=$('#diagramTitle').value,z=titleEdited;activePeriod=+e.target.value;titleEdited=true;build();$('#diagramTitle').value=t;titleEdited=z};$('#diagramTitle').oninput=()=>titleEdited=true;$('#reset').onclick=()=>{M=[Array(5).fill('')];titleEdited=false;grid();clear()};$('#share').onclick=()=>$('#menu').classList.toggle('open');$('#menu').onclick=e=>{if(e.target.dataset.x==='svg')dl(new Blob([svgText()],{type:'image/svg+xml'}),base()+'.svg');if(e.target.dataset.x==='png')png();if(e.target.dataset.x==='html')interactive();$('#menu').classList.remove('open')};document.addEventListener('pointerdown',e=>{if(!e.target.closest('.colourPop')&&!e.target.closest('.swatch'))$('#colourPop').classList.remove('open')});grid();
-</script><script>(function(){function copy(a){return(a||[]).map(r=>r.slice())}window.chartBridge={setData(data){M=copy(data&&data.length?data:[Array(8).fill('')]);refresh(0)},resetAll(){document.querySelector('#reset')?.click()}}})();</script><script>(function(){const guide="Use a category column followed by one or more numeric value columns.";const old=window.chartBridge.setData;window.chartBridge.setData=function(data){old.call(this,data);setTimeout(()=>{const q=document.querySelector('#svg'),empty=!q||q.style.display==='none'||!q.querySelector('*');if(empty&&data.some(r=>r.some(v=>String(v||'').trim()))){let s=document.querySelector('#status');s.textContent=guide;s.className='status note'}},180)}})();</script></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Donut chart builder</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="../assets/donut.css" />
+    <link rel="stylesheet" href="../assets/builder.css" />
+    <script src="../assets/shared.js"></script>
+    <script src="../assets/export.js"></script>
+  </head>
+  <body>
+    <div class="app">
+      <div aria-hidden="true" style="display: none">
+        <button id="reset"></button>
+        <table id="grid"></table>
+      </div>
+      <div id="status" class="status"></div>
+      <section class="card chart">
+        <div class="titlebar">
+          <input
+            id="diagramTitle"
+            class="diagramTitle"
+            value="Services by period"
+          />
+          <div class="menuWrap">
+            <button
+              id="share"
+              class="btn primary"
+              disabled
+              aria-label="Download"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                style="vertical-align: -2px; margin-right: 6px"
+              >
+                <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14" /></svg
+              >Download
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+              >
+                <path d="m3 4.5 3 3 3-3" />
+              </svg>
+            </button>
+            <div id="menu" class="menu">
+              <button data-x="svg">Editable SVG</button
+              ><button data-x="png">PNG image</button
+              ><button data-x="html">Interactive HTML</button>
+            </div>
+          </div>
+        </div>
+        <div class="bar">
+          <div class="controls">
+            <div class="ctrl">
+              Size<input
+                id="size"
+                type="range"
+                min="260"
+                max="760"
+                step="20"
+                value="380"
+              /><b id="sizev">380</b>
+            </div>
+            <div class="ctrl">
+              Spacing<input
+                id="p"
+                type="range"
+                min="0"
+                max="2"
+                step="0.1"
+                value="0.5"
+              /><b id="pv">0.5</b>
+            </div>
+            <div class="ctrl">
+              Hole<input
+                id="hole"
+                type="range"
+                min="25"
+                max="80"
+                value="58"
+              /><b id="holev">58%</b>
+            </div>
+            <div id="periodCtrl" class="ctrl" style="display: none">
+              Period<input id="period" type="range" /><b id="periodLabel"></b>
+            </div>
+          </div>
+          <div class="arrange">
+            <button id="typeToggle" class="btn active">Donut</button
+            ><button id="labelToggle" class="btn active">Value + %</button>
+          </div>
+        </div>
+        <div id="legend" class="legend"></div>
+        <div class="canvas">
+          <div id="empty" class="empty">The donut chart will appear here.</div>
+          <svg id="svg" style="display: none"></svg>
+        </div>
+      </section>
+    </div>
+    <div id="tip" class="tip"></div>
+    <div id="colourPop" class="colourPop">
+      <input id="hex" class="hex" maxlength="7" /><input
+        id="nativeColour"
+        class="nativeColour"
+        type="color"
+      />
+    </div>
+    <script src="../assets/donut.js"></script>
+    <script src="../assets/builder.js"></script>
+  </body>
+</html>

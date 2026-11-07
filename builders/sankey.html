@@ -1,101 +1,132 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Sankey builder</title><script src="https://d3js.org/d3.v7.min.js"></script><script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script><style>
-*{box-sizing:border-box}body{margin:0;background:#f7f8fa;color:#17212b;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:1900px;margin:auto;padding:18px}.card{background:#fff;border:1px solid #e5e9ed;border-radius:16px;box-shadow:0 10px 30px #14283a0d;overflow:hidden}.head{padding:18px 20px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.headcopy{min-width:0}.head h1{margin:0 0 4px;font-size:20px}.head p,.hint{color:#707986}.head p{margin:0;font-size:13px}.gridbox{margin:0 14px 10px;max-height:260px;overflow:auto;border:1px solid #e5e9ed;border-radius:10px}table{border-collapse:collapse;min-width:100%;width:max-content;font-size:12px}td{min-width:140px;height:31px;padding:6px 9px;border-right:1px solid #e5e9ed;border-bottom:1px solid #e5e9ed;white-space:nowrap}tr:first-child td{font-weight:700;background:#f8fafb;position:sticky;top:0;z-index:2}td:focus{outline:2px solid #8dc1f5;outline-offset:-2px}td.cellSelected{background:#dceeff!important;box-shadow:inset 0 0 0 1px #8dc1f5}tr:first-child td.cellSelected{background:#cfe6fb!important}.rn{min-width:36px!important;width:36px;text-align:center;color:#98a0a8;background:#fafbfc;position:sticky;left:0;z-index:3;font-weight:400!important}.hint{padding:0 20px 15px;font-size:11px}.chart{margin-top:14px}.titlebar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 20px 8px}.diagramTitle{margin:0;min-width:0;font-size:20px;line-height:1.2;font-weight:700;border:0;border-bottom:1px dashed transparent;outline:0;padding:2px 0;background:transparent;color:#17212b;flex:1}.diagramTitle:hover,.diagramTitle:focus{border-bottom-color:#9eabb5}.bar{display:flex;align-items:center;gap:18px;padding:9px 20px 10px;border-bottom:1px solid #e5e9ed;overflow-x:auto}.bar>*{flex:0 0 auto}.controls{display:flex;gap:17px;align-items:center;flex-wrap:nowrap}.ctrl{display:grid;grid-template-columns:auto 108px minmax(46px,max-content);gap:7px;align-items:center;font-size:11px;color:#707986}.ctrl b{color:#17212b;font-weight:500;white-space:nowrap}#periodCtrl{grid-template-columns:auto 154px max-content;column-gap:7px}#periodCtrl input[type=range]{width:154px}#periodLabel{white-space:nowrap;min-width:0;margin-left:0}input[type=range]{appearance:none;width:108px;height:4px;border-radius:9px;background:#dce3e8}input[type=range]::-webkit-slider-thumb{appearance:none;width:15px;height:15px;border-radius:50%;background:#172b3f;border:3px solid #fff;box-shadow:0 1px 5px #0003}.arrange{display:flex;align-items:center;gap:8px;margin-left:auto}.draghelp{padding:0 20px 10px;font-size:11px;color:#707986}.draghelp strong{color:#3d4955}.draghelp svg{width:15px;height:15px;vertical-align:-3px;margin-right:5px}.reset{border:1px solid #e0e5e9;background:#fff;color:#59636e;border-radius:8px;width:32px;height:32px;display:grid;place-items:center;cursor:pointer;flex:0 0 auto}.reset:hover{background:#f3f6f8;color:#17212b}.reset svg{width:16px;height:16px}.btn{border:1px solid #e0e5e9;background:#fff;border-radius:9px;padding:8px 12px;font:600 12px inherit;cursor:pointer}.btn:hover{background:#f7f9fa}.primary{background:#172b3f;color:#fff;border-color:#172b3f}.primary:hover{background:#223d56;color:#fff;border-color:#223d56}.btn:disabled{opacity:.4}.menuWrap{position:relative}.menu{display:none;position:absolute;right:0;top:39px;width:200px;background:#fff;border:1px solid #e1e6ea;border-radius:10px;box-shadow:0 12px 30px #0002;padding:5px;z-index:8}.menu.open{display:block}.menu button{width:100%;border:0;background:#fff;text-align:left;padding:9px;border-radius:7px;cursor:pointer}.menu button:hover{background:#f3f6f8}.legend{display:flex;gap:14px;flex-wrap:wrap;padding:11px 16px;background:#fff;border-bottom:1px solid #e5e9ed;font-size:11px;color:#59636e}.legend label{display:flex;align-items:center;gap:6px;padding:4px 7px;border-radius:7px;cursor:pointer;transition:.15s}.legend label:hover{background:#eef3f6;color:#17212b}.swatch{width:19px;height:19px;padding:0;border:2px solid #fff;border-radius:6px;box-shadow:0 0 0 1px #d7dde2;cursor:pointer}.colourPop{position:fixed;z-index:20;background:#fff;border:1px solid #d7dde2;border-radius:10px;box-shadow:0 12px 30px #0002;padding:10px;display:none;gap:8px;align-items:center}.colourPop.open{display:flex}.hex{width:86px;border:1px solid #ccd4da;border-radius:7px;padding:7px 8px;font:600 12px monospace;text-transform:uppercase}.nativeColour{width:34px;height:32px;border:0;padding:0;background:none}.swatch:hover{transform:scale(1.12);box-shadow:0 0 0 2px #91a0ad}.swatch::-webkit-color-swatch-wrapper{padding:0}.swatch::-webkit-color-swatch{border:0}.canvas{overflow:auto;background:#fff}.empty{padding:80px;text-align:center;color:#7c858f;font-size:13px}.link{fill:none;transition:opacity .15s;pointer-events:none}.linkHit{fill:none;stroke:transparent;cursor:ns-resize;pointer-events:stroke}.dim{opacity:.08!important}.node{cursor:ns-resize}.node rect{stroke:#0002;stroke-width:.5}.node text{font-size:12px;pointer-events:none}.node .value{font-size:11px;fill:#707986}.stage{font-size:11px;font-weight:750;fill:#4d5965;text-anchor:middle;letter-spacing:.07em;text-transform:uppercase}.detTip{position:fixed;display:none;width:245px;background:#17212b;color:#fff;padding:9px 11px;border-radius:8px;font-size:11px;line-height:1.4;z-index:10;box-shadow:0 6px 18px #0003}.detTip.open{display:block}.tip{position:fixed;pointer-events:none;background:#17212b;color:#fff;padding:8px 10px;border-radius:8px;font-size:12px;opacity:0;z-index:9;box-shadow:0 6px 18px #0003}
-
-.status{margin:0 20px 14px;padding:10px 12px;border-radius:9px;font-size:12px;display:none}.status.error{display:block;background:#fff1f1;color:#8b1e1e;border:1px solid #f2caca}.status.note{display:block;background:#eef6fb;color:#244b63;border:1px solid #cfe1ec}.metaLegend{padding:0 20px 10px;font-size:11px;color:#64717c}.dragPreview{fill:none;stroke:#172b3f;stroke-opacity:.55;stroke-dasharray:5 4;pointer-events:none}.dragDot{fill:#172b3f;stroke:#fff;stroke-width:3;pointer-events:none}.link.dragging{stroke-opacity:.8!important}.node text{fill:#17212b}.node text:not(.value){font-weight:700}.node text.value{font-weight:400}
-</style></head><body><div class="app"><div aria-hidden="true" style="display:none"><button id="reset"></button><table id="grid"></table></div><div id="status" class="status"></div><section class="card chart"><div class="titlebar"><input id="diagramTitle" class="diagramTitle" value="Enter title here" aria-label="Diagram title"><div class="menuWrap"><button id="share" class="btn primary" disabled aria-label="Download"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg>Download <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m3 4.5 3 3 3-3"/></svg></button><div id="menu" class="menu"><button data-x="svg">Editable SVG</button><button data-x="png">PNG image</button><button data-x="html">Interactive HTML</button></div></div></div><div class="bar"><div class="controls"><div class="ctrl">Width<input id="w" type="range" min="600" max="2200" step="20" value="1320"><b id="wv">1320</b></div><div class="ctrl">Height<input id="h" type="range" min="360" max="1400" step="20" value="360"><b id="hv">360</b></div><div class="ctrl">Spacing<input id="p" type="range" min="4" max="55" value="8"><b id="pv">8</b></div><div id="periodCtrl" class="ctrl" style="display:none">Period<input id="period" type="range" min="0" max="0" value="0"><b id="periodLabel"></b></div></div><div class="arrange"><button id="det" class="btn" disabled aria-describedby="detTip">Detangle</button></div></div><div id="legend" class="legend"></div><div class="canvas"><div id="empty" class="empty">The Sankey will appear here.</div><svg id="svg" style="display:none"></svg></div></section></div><div id="tip" class="tip"></div><div id="detTip" class="detTip" role="tooltip">Reorders the diagram to reduce crossed ribbons. You can also drag a bar, or drag a ribbon near either end, to reorder it manually.</div><div id="colourPop" class="colourPop"><input id="hex" class="hex" maxlength="7" aria-label="Hex colour"><input id="nativeColour" class="nativeColour" type="color" aria-label="Colour picker"></div><script>
-'use strict';
-let M=[Array(6).fill('')],model=null,lay=null,sk=null,timer=null,nodeOrder=new Map(),sourceLinkOrder=new Map(),targetLinkOrder=new Map(),detSeed=0,periodModels=[],activePeriod=0,widthTouched=false;
-const $=s=>document.querySelector(s),S=d3.select('#svg'),tip=d3.select('#tip');
-const PALETTE=['#5653FF','#00B188','#F8CA1C','#F56DAB','#FA9C28','#EF431B','#844AFF','#2B82C4','#3EB86D','#F57022','#B240FF','#7CBE52','#FF5C67','#F9B322','#BAC437'];
-const C={};
-const STAGE_PALETTES=[
- ['#5653FF','#2B82C4'],
- ['#00B188','#3EB86D','#7CBE52'],
- ['#F8CA1C','#F9B322','#BAC437'],
- ['#FA9C28','#F57022','#EF431B'],
- ['#F56DAB','#FF5C67'],
- ['#844AFF','#B240FF']
-];
-function nodeColour(d,nodes=model?.nodes||[]){if(C[d.name])return C[d.name];let family=STAGE_PALETTES[d.layer%STAGE_PALETTES.length],names=[...new Set(nodes.filter(n=>n.layer===d.layer).map(n=>n.name))].sort((a,b)=>a.localeCompare(b)),i=Math.max(0,names.indexOf(d.name));return family[i%family.length]}
-
-const norm=s=>String(s??'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
-const clean=s=>String(s??'').trim();
-const alias={source:['SOURCE','FROM','ORIGIN','START','SOURCEID'],target:['TARGET','TO','DESTINATION','END','TARGETID'],value:['VALUE','AMOUNT','WEIGHT','COUNT','PEOPLE','CANDIDATES','GWH','TOTAL','VOLUME','FREQUENCY'],period:['PERIOD','DATE','MONTH','QUARTER','YEAR','WEEK','TIME'],stage:['STAGE','STEP','LAYER','SEQUENCE','ORDER'],colour:['LINKCOLOUR','LINKCOLOR','COLOUR','COLOR','HEX'],group:['GROUP','CATEGORY','COHORT','SEGMENT','TYPE'],nodeId:['NODEID'],label:['LABEL','NODENAME','NAME']};
-function hidx(h,names){return h.findIndex(v=>names.includes(norm(v)))}
-function number(v){let s=String(v??'').trim().replace(/,/g,'').replace(/£|\$|%/g,'');if(!s)return NaN;return /^[-+]?\d*\.?\d+(e[-+]?\d+)?$/i.test(s)?Number(s):NaN}
-function colour(name){if(C[name])return C[name];let used=new Set(Object.values(C).map(x=>String(x).toUpperCase())),pick=PALETTE.find(x=>!used.has(x))||PALETTE[Object.keys(C).length%PALETTE.length];return C[name]=pick}
-function status(msg,type='error'){let e=$('#status');e.textContent=msg;e.className='status '+type}
-function clearStatus(){let e=$('#status');e.textContent='';e.className='status'}
-let selecting=false,selectionAnchor=null,selectionFocus=null;
-function selectionBounds(){if(!selectionAnchor||!selectionFocus)return null;return{r1:Math.min(selectionAnchor.r,selectionFocus.r),r2:Math.max(selectionAnchor.r,selectionFocus.r),c1:Math.min(selectionAnchor.c,selectionFocus.c),c2:Math.max(selectionAnchor.c,selectionFocus.c)}}
-function paintSelection(){let b=selectionBounds();document.querySelectorAll('#grid td[data-r]').forEach(td=>{let r=+td.dataset.r,c=+td.dataset.c;td.classList.toggle('cellSelected',!!b&&r>=b.r1&&r<=b.r2&&c>=b.c1&&c<=b.c2)})}
-function startSelection(e){if(e.button!==0)return;if(e.shiftKey&&selectionAnchor)selectionFocus={r:+this.dataset.r,c:+this.dataset.c};else selectionAnchor=selectionFocus={r:+this.dataset.r,c:+this.dataset.c};selecting=true;paintSelection()}
-function extendSelection(){if(!selecting)return;selectionFocus={r:+this.dataset.r,c:+this.dataset.c};paintSelection()}
-function endSelection(){selecting=false}
-function clearSelectedCells(){let b=selectionBounds();if(!b)return false;for(let r=b.r1;r<=b.r2;r++){while(M.length<=r)M.push([]);for(let c=b.c1;c<=b.c2;c++)M[r][c]=''}selectionAnchor=selectionFocus=null;grid();refresh(0);return true}
-function grid(){while(M.length>1&&M.at(-1).every(x=>!clean(x))&&M.at(-2).every(x=>!clean(x)))M.pop();if(M.some(r=>r.some(clean))&&!M.at(-1).every(x=>!clean(x)))M.push(Array(M[0].length).fill(''));let n=Math.max(6,...M.map(r=>r.length));M.forEach(r=>{while(r.length<n)r.push('')});let t=$('#grid');t.innerHTML='';M.forEach((r,i)=>{let tr=t.insertRow(),rn=tr.insertCell();rn.className='rn';rn.textContent=i||'';r.forEach((v,j)=>{let q=tr.insertCell();q.contentEditable=true;q.textContent=v;q.dataset.r=i;q.dataset.c=j;q.onmousedown=startSelection;q.onmouseenter=extendSelection;q.onpaste=paste;q.oninput=()=>{M[i][j]=q.textContent.trim();refresh()}})})}
-function paste(e){e.preventDefault();let sr=+e.currentTarget.dataset.r,sc=+e.currentTarget.dataset.c,a=e.clipboardData.getData('text/plain').replace(/\r/g,'').replace(/\n$/,'').split('\n').map(r=>r.split('\t')),nc=sc+Math.max(...a.map(r=>r.length));while(M.length<sr+a.length)M.push([]);M.forEach(r=>{while(r.length<nc)r.push('')});a.forEach((r,i)=>r.forEach((v,j)=>M[sr+i][sc+j]=v));grid();refresh(0)}
-function refresh(ms=120){clearTimeout(timer);timer=setTimeout(build,ms)}
-function nonempty(){return M.filter(r=>r.some(x=>clean(x))).map(r=>{let z=[...r];while(z.length&&!clean(z.at(-1)))z.pop();return z})}
-function looksLikeHeader(row){let n=row.map(norm),known=Object.values(alias).flat();return n.some(x=>known.includes(x))}
-function detectHeader(rows){if(!rows.length)return null;if(looksLikeHeader(rows[0]))return {h:rows[0],data:rows.slice(1),inferred:false};let vals=rows[0].map(number),numeric=vals.map(Number.isFinite);if(rows[0].length>=3&&numeric.filter(Boolean).length===1){let vi=numeric.indexOf(true),text=[0,1,2].filter(i=>i!==vi);let h=rows[0].map((_,i)=>i===vi?'Value':i===text[0]?'Source':i===text[1]?'Target':'Metadata');return {h,data:rows,inferred:true}}return {h:rows[0],data:rows.slice(1),inferred:false}}
-function rowsToLinks(h,data,forced={}){let si=forced.si??hidx(h,alias.source),ti=forced.ti??hidx(h,alias.target),vi=forced.vi??hidx(h,alias.value),pi=hidx(h,alias.period),sti=hidx(h,alias.stage),ci=hidx(h,alias.colour),gi=hidx(h,alias.group);if(si<0||ti<0||vi<0)return null;let links=[];for(const r of data){let s=clean(r[si]),t=clean(r[ti]),v=number(r[vi]);if(!s||!t||!Number.isFinite(v)||v<0)continue;links.push({s,t,v,period:pi>=0?clean(r[pi]):'',stage:sti>=0?number(r[sti]):NaN,colour:ci>=0?clean(r[ci]):'',group:gi>=0?clean(r[gi]):'',meta:Object.fromEntries(h.map((x,i)=>[clean(x),clean(r[i])]).filter(([k,v])=>k&&v&&![si,ti,vi,pi,sti,ci,gi].includes(h.indexOf(k))))})}return {links,periodIndex:pi,stageIndex:sti,valueLabel:clean(h[vi])||'Value',groupLabel:gi>=0?clean(h[gi]):''}}
-function wideToLinks(h,data){let numericScores=h.map((_,j)=>data.filter(r=>Number.isFinite(number(r[j]))).length),vi=numericScores.indexOf(Math.max(...numericScores));if(vi<0||numericScores[vi]===0)return null;let pathCols=h.map((_,i)=>i).filter(i=>i!==vi&&data.some(r=>clean(r[i])));if(pathCols.length<2)return null;let links=[];for(const r of data){let v=number(r[vi]);if(!Number.isFinite(v)||v<0)continue;let path=pathCols.map(i=>clean(r[i])).filter(Boolean);for(let i=0;i<path.length-1;i++)links.push({s:path[i],t:path[i+1],v,period:'',stage:i+1,colour:'',group:'',meta:{Path:path.join(' → ')}})}return {links,periodIndex:-1,stageIndex:0,valueLabel:clean(h[vi])||'Value',groupLabel:''}}
-function nodesPlusLinks(h,data){let ni=hidx(h,alias.nodeId),li=hidx(h,alias.label),gi=hidx(h,alias.group),si=hidx(h,['SOURCEID']),ti=hidx(h,['TARGETID']),vi=hidx(h,alias.value);if(ni<0||li<0||si<0||ti<0||vi<0)return null;let nodes=new Map();for(const r of data)if(clean(r[ni]))nodes.set(clean(r[ni]),{label:clean(r[li])||clean(r[ni]),group:gi>=0?clean(r[gi]):''});let links=[];for(const r of data){let a=nodes.get(clean(r[si])),b=nodes.get(clean(r[ti])),v=number(r[vi]);if(a&&b&&Number.isFinite(v)&&v>=0)links.push({s:a.label,t:b.label,v,period:'',stage:NaN,colour:'',group:a.group||b.group,meta:{}})}return links.length?{links,periodIndex:-1,stageIndex:-1,valueLabel:clean(h[vi])||'Value',groupLabel:gi>=0?clean(h[gi]):''}:null}
-function densifyNodeTables(rows){let header=rows[0];let nid=header.findIndex(x=>norm(x)==='NODEID'),sid=header.findIndex(x=>norm(x)==='SOURCEID');if(nid<0||sid<0)return null;return nodesPlusLinks(header,rows.slice(1))}
-function topoLayers(links,explicit){let names=[...new Set(links.flatMap(x=>[x.s,x.t]))],ind=new Map(names.map(n=>[n,0])),out=new Map(names.map(n=>[n,[]]));for(const l of links){if(l.s===l.t)return {error:`A self-link was found for “${l.s}”. Sankey and alluvial layouts need links between different nodes.`};ind.set(l.t,ind.get(l.t)+1);out.get(l.s).push(l.t)}let q=names.filter(n=>ind.get(n)===0),order=[];while(q.length){let n=q.shift();order.push(n);for(const t of out.get(n)){ind.set(t,ind.get(t)-1);if(ind.get(t)===0)q.push(t)}}if(order.length!==names.length)return {error:'This table contains a cycle or backward loop. A Sankey/alluvial layout cannot place that flow left-to-right. Remove or split the loop into a separate step.'};let layer=new Map(names.map(n=>[n,0]));for(const n of order)for(const t of out.get(n))layer.set(t,Math.max(layer.get(t),layer.get(n)+1));if(explicit){for(const l of links){if(Number.isFinite(l.stage)){layer.set(l.s,Math.max(layer.get(l.s)||0,l.stage-1));layer.set(l.t,Math.max(layer.get(l.t)||0,l.stage))}}}return {layer}}
-function aggregate(links){let m=new Map();for(const d of links){if(d.v===0)continue;let k=[d.s,d.t,d.stage,d.colour,d.group].join('\u0001'),o=m.get(k)||{...d,v:0,rows:0,metaList:[]};o.v+=d.v;o.rows++;if(Object.keys(d.meta||{}).length)o.metaList.push(d.meta);m.set(k,o)}return [...m.values()]}
-function makeModel(links,explicitStage){let staged=explicitStage&&links.every(l=>Number.isFinite(l.stage));if(staged){let agg=aggregate(links),nodeMap=new Map(),outLinks=[];for(const [i,l] of agg.entries()){let a=Math.max(0,l.stage-1),b=Math.max(a+1,l.stage),sid=`${a}|${l.s}`,tid=`${b}|${l.t}`;if(!nodeMap.has(sid))nodeMap.set(sid,{id:sid,name:l.s,layer:a});if(!nodeMap.has(tid))nodeMap.set(tid,{id:tid,name:l.t,layer:b});outLinks.push({id:`L${i}:${sid}>${tid}`,source:sid,target:tid,value:l.v,colour:l.colour,group:l.group,rows:l.rows,metaList:l.metaList})}return {nodes:[...nodeMap.values()],links:outLinks}}let topo=topoLayers(links,false);if(topo.error)return topo;let agg=aggregate(links),nodeMap=new Map();for(const l of agg){for(const n of [l.s,l.t])if(!nodeMap.has(n))nodeMap.set(n,{id:n,name:n,layer:topo.layer.get(n)||0})}let outLinks=agg.map((l,i)=>({id:`L${i}:${l.s}>${l.t}`,source:l.s,target:l.t,value:l.v,colour:l.colour,group:l.group,rows:l.rows,metaList:l.metaList}));return {nodes:[...nodeMap.values()],links:outLinks}}
-function legacyWfsParse(rows){
- if(!rows.length)return null;
- let dh=detectHeader(rows),h=dh.h,data=dh.data,si=hidx(h,['WFSGROUP']),ti=hidx(h,['SUBSEQUENTWFSGROUP']),ii=hidx(h,['INITIATOR']),zi=hidx(h,['TERMINATOR']);
- if(si<0||ti<0)return null;
- const ignored=new Set([si,ti,ii,zi,hidx(h,['JOINKEY'])].filter(i=>i>=0));
- let periods=h.map((x,j)=>({j,label:clean(x)})).filter(x=>!ignored.has(x.j)&&data.some(r=>Number.isFinite(number(r[x.j]))&&number(r[x.j])>0));
- if(!periods.length)return null;
- const yes=v=>['YES','TRUE','1','Y'].includes(norm(v)), node=v=>{let q=clean(v),n=norm(q),m=n.match(/CONVERSATION(\d+)/);if(n.includes('HOSPITAL'))return'Hospital Referral';if(n.includes('INITIAL'))return'Initial Contact';if(m)return 'Conversation '+m[1];if(n.includes('PURCHASE')||n.includes('PACKAGE'))return'Purchase Service';if(n==='NFA'||n.includes('NOFURTHERACTION')||n.includes('CLOSURE')||n.includes('CANCEL'))return'NFA';return q||'Other'}, fixed=v=>{let n=norm(v),m=n.match(/CONVERSATION(\d+)/);return n.includes('HOSPITAL')||n.includes('INITIAL')?0:m?+m[1]:null};
- let routes=[];for(const r of data){if(norm(r[si])==='TOTAL')continue;let a=node(r[si]),b=node(r[ti]);if(!a||!b)continue;routes.push({a,b,i:ii>=0&&yes(r[ii]),z:zi>=0&&yes(r[zi]),r})}
- if(!routes.length)return null;
- let st=new Map();routes.forEach(d=>{let a=fixed(d.a),b=fixed(d.b);if(d.i)a=0;if(a!=null)st.set(d.a,a);if(b!=null)st.set(d.b,b)});for(let k=0;k<10;k++)routes.forEach(d=>{if(st.has(d.a)&&!st.has(d.b)&&!d.z)st.set(d.b,st.get(d.a)+1);if(!st.has(d.a)&&st.has(d.b)&&!d.i)st.set(d.a,Math.max(0,st.get(d.b)-1))});
- let links=[];for(const d of routes){let a=st.get(d.a)??0,b=d.z?a+1:(st.get(d.b)??a+1);if(b<=a)b=a+1;for(const p of periods){let v=number(d.r[p.j]);if(Number.isFinite(v)&&v>0)links.push({s:d.a,t:d.b,v,period:p.label,stage:b,colour:'',group:'',meta:{}})}}
- return links.length?{links,periodIndex:0,stageIndex:0,valueLabel:'Value',groupLabel:''}:null
-}
-function build(){clearStatus();let rows=nonempty();if(!rows.length)return clear();let parsed=legacyWfsParse(rows)||densifyNodeTables(rows),dh=detectHeader(rows);if(!parsed){parsed=nodesPlusLinks(dh.h,dh.data)||rowsToLinks(dh.h,dh.data)||wideToLinks(dh.h,dh.data)}if(!parsed||!parsed.links.length){clear();status('I could not identify this table. Use Source, Target and Value columns; a staged long table; a wide pathway with a numeric weight; or Node ID plus Source ID/Target ID tables.','error');return}if(dh.inferred)status('No headers were detected, so the first three columns were interpreted as Source, Target and Value.','note');if(parsed.groupLabel)status(`${parsed.groupLabel} is available as link metadata and appears in ribbon tooltips.`,`note`);let periods=parsed.periodIndex>=0?[...new Set(parsed.links.map(x=>x.period).filter(Boolean))]:[];periodModels=[];if(periods.length){for(const p of periods){let mm=makeModel(parsed.links.filter(x=>x.period===p),parsed.stageIndex>=0);if(mm.error){clear();status(mm.error);return}periodModels.push({label:p,model:mm})}}else{let mm=makeModel(parsed.links,parsed.stageIndex>=0);if(mm.error){clear();status(mm.error);return}periodModels=[{label:parsed.valueLabel,model:mm}]}activePeriod=Math.min(activePeriod,periodModels.length-1);model=periodModels[activePeriod].model;let pc=$('#periodCtrl'),pr=$('#period');pc.style.display=periodModels.length>1?'grid':'none';pr.max=Math.max(0,periodModels.length-1);pr.value=activePeriod;$('#periodLabel').textContent=periodModels[activePeriod].label;initialOrders();render()}
-function initialOrders(){let volume=new Map(model.nodes.map(n=>[n.id,0]));model.links.forEach(l=>{volume.set(l.source,(volume.get(l.source)||0)+l.value);volume.set(l.target,(volume.get(l.target)||0)+l.value)});for(const layer of new Set(model.nodes.map(n=>n.layer))){model.nodes.filter(n=>n.layer===layer).sort((a,b)=>(volume.get(b.id)||0)-(volume.get(a.id)||0)||a.name.localeCompare(b.name)).forEach((n,i)=>{if(!nodeOrder.has(n.id))nodeOrder.set(n.id,i)})}model.links.slice().sort((a,b)=>b.value-a.value).forEach((l,i)=>{if(!sourceLinkOrder.has(l.id))sourceLinkOrder.set(l.id,i);if(!targetLinkOrder.has(l.id))targetLinkOrder.set(l.id,i)})}
-function clear(){model=null;S.style('display','none').selectAll('*').remove();$('#empty').style.display='block';$('#legend').innerHTML='';$('#det').disabled=$('#share').disabled=true}
-function autoHeight(){let layers=d3.group(model.nodes,d=>d.layer),max=Math.max(...[...layers.values()].map(a=>a.length)),labels=Math.max(...model.nodes.map(n=>n.name.length));return Math.max(360,90+max*48+(labels>25?50:0))}
-function render(){if(!model)return;let W=+$('#w').value,P=+$('#p').value,H=Math.max(+$('#h').value,autoHeight());if(+$('#h').value<H)$('#h').value=Math.min(H,+$('#h').max);H=+$('#h').value;$('#wv').textContent=W;$('#hv').textContent=H;$('#pv').textContent=P;$('#empty').style.display='none';S.style('display','block').attr('width',W).attr('height',H).attr('viewBox',`0 0 ${W} ${H}`).selectAll('*').remove();let nr=d=>nodeOrder.get(d.id)??0,lr=(a,b)=>a.source.id===b.source.id?(sourceLinkOrder.get(a.id)??a.index)-(sourceLinkOrder.get(b.id)??b.index):a.target.id===b.target.id?(targetLinkOrder.get(a.id)??a.index)-(targetLinkOrder.get(b.id)??b.index):a.index-b.index;let layerCount=new Set(model.nodes.map(n=>n.layer)).size,isSimpleSankey=layerCount===2,leftMargin=isSimpleSankey?170:20,rightMargin=isSimpleSankey?170:210;sk=d3.sankey().nodeId(d=>d.id).nodeWidth(16).nodePadding(P).nodeAlign(d=>d.layer).nodeSort((a,b)=>nr(a)-nr(b)).linkSort(lr).extent([[leftMargin,38],[W-rightMargin,H-28]]);try{lay=sk({nodes:model.nodes.map(d=>({...d})),links:model.links.map(d=>({...d}))})}catch(e){status('The table could not be laid out as a Sankey. Check for circular routes or steps that go backwards.');return}
-let defs=S.append('defs');lay.links.forEach((d,i)=>{d.g='g'+i;let g=defs.append('linearGradient').attr('id',d.g).attr('gradientUnits','userSpaceOnUse').attr('x1',d.source.x1).attr('x2',d.target.x0);g.append('stop').attr('offset','0%').attr('stop-color',d.colour||nodeColour(d.source,lay.nodes));g.append('stop').attr('offset','100%').attr('stop-color',d.colour||nodeColour(d.target,lay.nodes))});let xs=[...new Set(lay.nodes.map(n=>n.x0))].sort((a,b)=>a-b);S.append('g').selectAll('text').data(xs).join('text').attr('class','stage').attr('x',d=>d+8).attr('y',19).text((d,i)=>i===0?'Start':i===xs.length-1?'Outcome':`Stage ${i}`);
-let lg=S.append('g'),preview=S.append('g').style('display','none');preview.append('path').attr('class','dragPreview');preview.append('circle').attr('class','dragDot').attr('r',7);function tooltip(d,drag=false){let meta=[];if(d.group)meta.push(d.group);if(d.rows>1)meta.push(`${d.rows} rows combined`);let raw=d.metaList?.[0]||{};for(const [k,v] of Object.entries(raw))if(k&&v)meta.push(`${k}: ${v}`);return `<b>${d.source.name} → ${d.target.name}</b><br>${d.value.toLocaleString()}${meta.length?'<br>'+meta.join(' · '):''}${drag?'<br>Release to place ribbon':''}`}
-let ordered=lay.links.slice().sort((a,b)=>b.width-a.width),q=lg.selectAll('path.link').data(ordered,d=>d.id).join('path').attr('class','link').attr('d',d3.sankeyLinkHorizontal()).attr('stroke',d=>`url(#${d.g})`).attr('stroke-opacity',.58).attr('stroke-width',d=>Math.max(1,d.width)).on('mousemove',(e,d)=>tip.style('opacity',1).style('left',e.clientX+12+'px').style('top',e.clientY+8+'px').html(tooltip(d))).on('mouseenter',(e,d)=>q.classed('dim',x=>x!==d)).on('mouseleave',()=>{tip.style('opacity',0);q.classed('dim',false)});
-let dragRibbon=d3.drag().clickDistance(2).on('start',(e,d)=>{q.classed('dim',x=>x!==d).classed('dragging',x=>x===d);preview.style('display',null)}).on('drag',(e,d)=>{let atSource=e.x<(d.source.x1+d.target.x0)/2,x1=atSource?e.x:d.source.x1,y1=atSource?e.y:d.y0,x2=atSource?d.target.x0:e.x,y2=atSource?d.y1:e.y,dx=Math.max(40,(x2-x1)/2);preview.select('path').attr('d',`M${x1},${y1}C${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}`).attr('stroke-width',Math.max(4,d.width));preview.select('circle').attr('cx',e.x).attr('cy',e.y);tip.style('opacity',1).style('left',e.sourceEvent.clientX+12+'px').style('top',e.sourceEvent.clientY+8+'px').html(tooltip(d,true))}).on('end',(e,d)=>{let atSource=e.x<(d.source.x1+d.target.x0)/2,sib=(atSource?d.source.sourceLinks:d.target.targetLinks).slice().sort((a,b)=>atSource?a.y0-b.y0:a.y1-b.y1),anchor=atSource?d.source:d.target,span=Math.max(1,anchor.y1-anchor.y0),idx=Math.max(0,Math.min(sib.length-1,Math.floor((e.y-anchor.y0)/span*sib.length)));sib=sib.filter(x=>x!==d);sib.splice(idx,0,d);sib.forEach((x,i)=>(atSource?sourceLinkOrder:targetLinkOrder).set(x.id,i));preview.style('display','none');tip.style('opacity',0);render()});lg.selectAll('path.linkHit').data(ordered,d=>d.id).join('path').attr('class','linkHit').attr('d',d3.sankeyLinkHorizontal()).attr('stroke-width',d=>Math.max(18,d.width+12)).on('mousemove',(e,d)=>tip.style('opacity',1).style('left',e.clientX+12+'px').style('top',e.clientY+8+'px').html(tooltip(d))).on('mouseenter',(e,d)=>q.classed('dim',x=>x!==d)).on('mouseleave',()=>{tip.style('opacity',0);q.classed('dim',false)}).call(dragRibbon);
-let ng=S.append('g').selectAll('g').data(lay.nodes).join('g').attr('class','node').call(d3.drag().on('drag',function(e,d){let h=d.y1-d.y0;d.y0=Math.max(38,Math.min(H-28-h,e.y-h/2));d.y1=d.y0+h;sk.update(lay);d3.select(this).select('rect').attr('y',d.y0);d3.select(this).selectAll('text').attr('y',(_,i)=>(d.y0+d.y1)/2+(i?9:-6));lg.selectAll('path').attr('d',d3.sankeyLinkHorizontal())}).on('end',(e,d)=>{lay.nodes.filter(n=>n.layer===d.layer).sort((a,b)=>a.y0-b.y0).forEach((n,i)=>nodeOrder.set(n.id,i));render()}));ng.append('rect').attr('x',d=>d.x0).attr('y',d=>d.y0).attr('width',d=>d.x1-d.x0).attr('height',d=>Math.max(2,d.y1-d.y0)).attr('rx',1.5).attr('fill',d=>nodeColour(d,lay.nodes));let small=d=>(d.y1-d.y0)<34,labelX=d=>isSimpleSankey?(d.layer===0?d.x0-12:d.x1+12):d.x1+8,labelAnchor=d=>isSimpleSankey?(d.layer===0?'end':'start'):'start';ng.append('text').attr('x',labelX).attr('y',d=>(d.y0+d.y1)/2+(small(d)?4:-6)).attr('text-anchor',labelAnchor).text(d=>small(d)?`${d.name}  ${d.value.toLocaleString()}`:d.name);ng.filter(d=>!small(d)).append('text').attr('class','value').attr('x',labelX).attr('y',d=>(d.y0+d.y1)/2+9).attr('text-anchor',labelAnchor).text(d=>d.value.toLocaleString());legend();$('#det').disabled=$('#share').disabled=false}
-function openColour(e,name){let pop=$('#colourPop'),hex=$('#hex'),native=$('#nativeColour'),v=nodeColour(model.nodes.find(n=>n.name===name)||{name,layer:0},model.nodes).toUpperCase(),r=e.currentTarget.getBoundingClientRect();pop.style.left=Math.min(innerWidth-150,r.left)+'px';pop.style.top=(r.bottom+7)+'px';pop.classList.add('open');hex.value=v;native.value=v;hex.focus();hex.select();let apply=v=>{if(/^#[0-9A-F]{6}$/i.test(v)){C[name]=v.toUpperCase();render()}};hex.oninput=()=>apply(hex.value);native.oninput=()=>{hex.value=native.value.toUpperCase();apply(native.value)}}
-function legend(){let seen=new Set(),items=model.nodes.filter(n=>{let k=n.layer+'|'+n.name;if(seen.has(k))return false;seen.add(k);return true}).sort((a,b)=>a.layer-b.layer||a.name.localeCompare(b.name)),b=$('#legend');b.innerHTML='';items.forEach(n=>{let l=document.createElement('label'),i=document.createElement('button');i.type='button';i.className='swatch';i.style.background=nodeColour(n,model.nodes);i.title='Change colour for '+n.name;i.onclick=e=>openColour(e,n.name);l.append(i,document.createTextNode(n.name));b.append(l)})}
-function crossingScore(pos){let score=0;for(let i=0;i<model.links.length;i++)for(let j=i+1;j<model.links.length;j++){let a=model.links[i],b=model.links[j],as=pos.get(a.source)||0,bs=pos.get(b.source)||0,at=pos.get(a.target)||0,bt=pos.get(b.target)||0;if((as-bs)*(at-bt)<0)score+=Math.min(a.value,b.value)}return score}
-function detangle(){let candidates=[];for(let t=0;t<36;t++){let pos=new Map(model.nodes.map(n=>[n.id,Math.random()]));for(let z=0;z<8;z++)for(const layer of new Set(model.nodes.map(n=>n.layer))){let ns=model.nodes.filter(n=>n.layer===layer);ns.forEach(n=>{let c=model.links.filter(x=>x.source===n.id||x.target===n.id),w=0,sum=0;c.forEach(x=>{let other=x.source===n.id?x.target:x.source;sum+=(pos.get(other)||0)*x.value;w+=x.value});if(w)pos.set(n.id,sum/w+(Math.random()-.5)*.15)});ns.sort((a,b)=>(pos.get(a.id)||0)-(pos.get(b.id)||0)).forEach((n,i)=>pos.set(n.id,i))}candidates.push({pos,score:crossingScore(pos)})}candidates.sort((a,b)=>a.score-b.score);nodeOrder=candidates[detSeed++%Math.min(6,candidates.length)].pos;render()}
-function svgText(){let c=$('#svg').cloneNode(true);c.querySelectorAll('.linkHit,.dragPreview,.dragDot').forEach(x=>x.remove());c.setAttribute('xmlns','http://www.w3.org/2000/svg');let style=document.createElementNS('http://www.w3.org/2000/svg','style');style.textContent='text{font-family:Inter,Segoe UI,sans-serif;fill:#17212b}.stage{font-size:11px;font-weight:700;fill:#4d5965;text-anchor:middle}.value{font-size:11px;fill:#707986}.link{fill:none}';c.insertBefore(style,c.firstChild);return new XMLSerializer().serializeToString(c)}
-function fileBase(){return ($('#diagramTitle').value||'sankey').trim().replace(/[\\/:*?"<>|]+/g,'-').slice(0,120)||'sankey'}function dl(blob,name){let u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),500)}
-function png(){let im=new Image(),u=URL.createObjectURL(new Blob([svgText()],{type:'image/svg+xml;charset=utf-8'}));im.onload=()=>{let c=document.createElement('canvas');c.width=im.width*2;c.height=im.height*2;let x=c.getContext('2d');x.drawImage(im,0,0,c.width,c.height);c.toBlob(b=>dl(b,fileBase()+'.png'),'image/png');URL.revokeObjectURL(u)};im.src=u}
-function interactive(){
- const savedModel=model,savedPeriod=activePeriod,savedTitle=$('#diagramTitle').value,frames=[];
- for(let i=0;i<periodModels.length;i++){
-   activePeriod=i;model=periodModels[i].model;initialOrders();render();
-   let clone=$('#svg').cloneNode(true);clone.querySelectorAll('.linkHit,.dragPreview,.dragDot').forEach(x=>x.remove());clone.setAttribute('xmlns','http://www.w3.org/2000/svg');clone.style.display='block';
-   let ordered=lay.links.slice().sort((a,b)=>b.width-a.width),paths=[...clone.querySelectorAll('path.link')];paths.forEach((path,j)=>{let d=ordered[j];if(!d)return;let title=document.createElementNS('http://www.w3.org/2000/svg','title'),meta=[];if(d.group)meta.push(d.group);if(d.rows>1)meta.push(d.rows+' rows combined');title.textContent=d.source.name+' → '+d.target.name+'\n'+d.value.toLocaleString()+(meta.length?'\n'+meta.join(' · '):'');path.appendChild(title)});
-   let style=document.createElementNS('http://www.w3.org/2000/svg','style');style.textContent='text{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#17212b}.stage{font-size:11px;font-weight:700;fill:#4d5965;text-anchor:middle}.value{font-size:11px;fill:#707986;font-weight:400}.node text:not(.value){font-size:12px;font-weight:700}.link{fill:none}.dim{opacity:.08}';clone.insertBefore(style,clone.firstChild);
-   frames.push({label:periodModels[i].label,svg:new XMLSerializer().serializeToString(clone),legend:$('#legend').innerHTML});
- }
- activePeriod=savedPeriod;model=savedModel;initialOrders();render();$('#period').value=savedPeriod;$('#periodLabel').textContent=periodModels[savedPeriod]?.label||'';
- const payload=JSON.stringify({title:savedTitle,frames,active:savedPeriod});
- const doc=`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${savedTitle.replace(/[<>]/g,'')}</title><style>*{box-sizing:border-box}body{margin:0;background:#f7f8fa;color:#17212b;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1900px;margin:auto;padding:18px}.card{background:#fff;border:1px solid #e5e9ed;border-radius:16px;box-shadow:0 10px 30px #14283a0d;overflow:auto}.top{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:20px 22px 8px}.title{font-size:24px;font-weight:800}.period{display:flex;align-items:center;gap:9px;font-size:11px;color:#707986}.period input{appearance:none;width:154px;height:4px;border-radius:9px;background:#dce3e8}.period input::-webkit-slider-thumb{appearance:none;width:15px;height:15px;border-radius:50%;background:#172b3f;border:3px solid #fff;box-shadow:0 1px 5px #0003}.period b{color:#17212b;font-weight:500}.canvas svg{display:block;background:#fff}.exportTip{position:fixed;z-index:10;pointer-events:none;background:#17212b;color:#fff;padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.4;opacity:0;box-shadow:0 6px 18px #0003;max-width:320px}.legend{display:flex;gap:14px;flex-wrap:wrap;padding:12px 22px 18px;border-top:1px solid #edf0f2;font-size:11px;color:#59636e}.legend label{display:flex;align-items:center;gap:6px;padding:4px 7px}.legend .swatch{width:19px;height:19px;padding:0;border:0;border-radius:6px;box-shadow:none;pointer-events:none}</style><style>
-.btn,.curveBtn{border-radius:13px!important}.reset{border-radius:10px!important}
-.menuWrap{position:relative!important;display:inline-block!important;flex:0 0 auto!important;width:auto!important}
-.menu{width:158px!important;min-width:158px!important;border-radius:13px!important}
-.menu button{display:block!important;width:100%!important;min-width:0!important;padding:9px!important;border-radius:9px!important;white-space:nowrap!important}
-#curveMenu{width:108px!important;min-width:108px!important}.primary{width:auto!important;max-width:max-content!important}
-</style></head><body><div class="wrap"><div class="card"><div class="top"><div class="title"></div><div class="period"><span>Period</span><input id="period" type="range"><b id="periodLabel"></b></div></div><div class="canvas"></div><div class="legend"></div></div></div><div class="exportTip"></div><script>const D=${payload},slider=document.querySelector('#period'),box=document.querySelector('.period'),tip=document.querySelector('.exportTip');document.querySelector('.title').textContent=D.title;slider.min=0;slider.max=Math.max(0,D.frames.length-1);slider.value=Math.min(D.active,D.frames.length-1);box.style.display=D.frames.length>1?'flex':'none';function show(i){let f=D.frames[i];if(!f)return;document.querySelector('.canvas').innerHTML=f.svg;document.querySelector('.legend').innerHTML=f.legend;document.querySelector('#periodLabel').textContent=f.label;document.querySelectorAll('.canvas path.link').forEach(path=>{let title=path.querySelector('title'),text=title?title.textContent:'';path.addEventListener('mouseenter',()=>{let lines=text.split('\\n');tip.innerHTML='<b>'+lines[0]+'</b>'+lines.slice(1).map(x=>'<br>'+x).join('');tip.style.opacity='1';document.querySelectorAll('.canvas path.link').forEach(x=>{if(x!==path)x.style.opacity='.08'})});path.addEventListener('mousemove',e=>{tip.style.left=e.clientX+12+'px';tip.style.top=e.clientY+8+'px'});path.addEventListener('mouseleave',()=>{tip.style.opacity='0';document.querySelectorAll('.canvas path.link').forEach(x=>x.style.opacity='')})})}slider.oninput=e=>show(+e.target.value);show(+slider.value);<\/script></body></html>`;
- dl(new Blob([doc],{type:'text/html'}),fileBase()+'.html')
-}
-$('#w').oninput=()=>{widthTouched=true;render()};['h','p'].forEach(x=>$('#'+x).oninput=render);requestAnimationFrame(()=>{if(widthTouched)return;let el=document.querySelector('.canvas'),r=$('#w'),fit=Math.floor(el.clientWidth/20)*20;r.value=Math.max(+r.min,Math.min(+r.max,fit));if(model)render()});$('#reset').onclick=()=>{M=[Array(6).fill('')];model=null;periodModels=[];activePeriod=0;$('#diagramTitle').value='Enter title here';grid();clear();clearStatus()};let detTip=$('#detTip'),detBtn=$('#det');detBtn.onmouseenter=()=>{let r=detBtn.getBoundingClientRect();detTip.style.left=Math.max(8,Math.min(innerWidth-253,r.left+r.width/2-122))+'px';detTip.style.top=r.bottom+8+'px';detTip.classList.add('open')};detBtn.onmouseleave=()=>detTip.classList.remove('open');$('#period').oninput=e=>{activePeriod=+e.target.value;model=periodModels[activePeriod].model;$('#periodLabel').textContent=periodModels[activePeriod].label;initialOrders();render()};document.addEventListener('mouseup',endSelection);document.addEventListener('keydown',e=>{if((e.key==='Delete'||e.key==='Backspace')&&selectionBounds()){e.preventDefault();clearSelectedCells()}if(e.key==='Escape'){selectionAnchor=selectionFocus=null;paintSelection()}});document.addEventListener('pointerdown',e=>{if(!e.target.closest('#colourPop')&&!e.target.closest('.swatch'))$('#colourPop').classList.remove('open')});$('#det').onclick=detangle;$('#share').onclick=()=>$('#menu').classList.toggle('open');$('#menu').onclick=e=>{let x=e.target.dataset.x;if(x==='svg')dl(new Blob([svgText()],{type:'image/svg+xml'}),fileBase()+'.svg');if(x==='png')png();if(x==='html')interactive();$('#menu').classList.remove('open')};grid();
-</script><script>(function(){function copy(a){return(a||[]).map(r=>r.slice())}window.chartBridge={setData(data){M=copy(data&&data.length?data:[Array(8).fill('')]);refresh(0)},resetAll(){document.querySelector('#reset')?.click()}}})();</script><script>(function(){const guide="Use Source, Target and Value columns.";const old=window.chartBridge.setData;window.chartBridge.setData=function(data){old.call(this,data);setTimeout(()=>{const q=document.querySelector('#svg'),empty=!q||q.style.display==='none'||!q.querySelector('*');if(empty&&data.some(r=>r.some(v=>String(v||'').trim()))){let s=document.querySelector('#status');s.textContent=guide;s.className='status note'}},180)}})();</script></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Sankey builder</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+    <link rel="stylesheet" href="../assets/sankey.css" />
+    <link rel="stylesheet" href="../assets/builder.css" />
+    <script src="../assets/shared.js"></script>
+    <script src="../assets/export.js"></script>
+  </head>
+  <body>
+    <div class="app">
+      <div aria-hidden="true" style="display: none">
+        <button id="reset"></button>
+        <table id="grid"></table>
+      </div>
+      <div id="status" class="status"></div>
+      <section class="card chart">
+        <div class="titlebar">
+          <input
+            id="diagramTitle"
+            class="diagramTitle"
+            value="Enter title here"
+            aria-label="Diagram title"
+          />
+          <div class="menuWrap">
+            <button
+              id="share"
+              class="btn primary"
+              disabled
+              aria-label="Download"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                style="vertical-align: -2px; margin-right: 6px"
+              >
+                <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14" /></svg
+              >Download
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+              >
+                <path d="m3 4.5 3 3 3-3" />
+              </svg>
+            </button>
+            <div id="menu" class="menu">
+              <button data-x="svg">Editable SVG</button
+              ><button data-x="png">PNG image</button
+              ><button data-x="html">Interactive HTML</button>
+            </div>
+          </div>
+        </div>
+        <div class="bar">
+          <div class="controls">
+            <div class="ctrl">
+              Width<input
+                id="w"
+                type="range"
+                min="600"
+                max="2200"
+                step="20"
+                value="1320"
+              /><b id="wv">1320</b>
+            </div>
+            <div class="ctrl">
+              Height<input
+                id="h"
+                type="range"
+                min="360"
+                max="1400"
+                step="20"
+                value="360"
+              /><b id="hv">360</b>
+            </div>
+            <div class="ctrl">
+              Spacing<input id="p" type="range" min="4" max="55" value="8" /><b
+                id="pv"
+                >8</b
+              >
+            </div>
+            <div id="periodCtrl" class="ctrl" style="display: none">
+              Period<input
+                id="period"
+                type="range"
+                min="0"
+                max="0"
+                value="0"
+              /><b id="periodLabel"></b>
+            </div>
+          </div>
+          <div class="arrange">
+            <button id="det" class="btn" disabled aria-describedby="detTip">
+              Detangle
+            </button>
+          </div>
+        </div>
+        <div id="legend" class="legend"></div>
+        <div class="canvas">
+          <div id="empty" class="empty">The Sankey will appear here.</div>
+          <svg id="svg" style="display: none"></svg>
+        </div>
+      </section>
+    </div>
+    <div id="tip" class="tip"></div>
+    <div id="detTip" class="detTip" role="tooltip">
+      Reorders the diagram to reduce crossed ribbons. You can also drag a bar,
+      or drag a ribbon near either end, to reorder it manually.
+    </div>
+    <div id="colourPop" class="colourPop">
+      <input id="hex" class="hex" maxlength="7" aria-label="Hex colour" /><input
+        id="nativeColour"
+        class="nativeColour"
+        type="color"
+        aria-label="Colour picker"
+      />
+    </div>
+    <script src="../assets/sankey.js"></script>
+    <script src="../assets/builder.js"></script>
+  </body>
+</html>
