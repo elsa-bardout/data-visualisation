@@ -1,111 +1,16 @@
-/* The parent owns source data, mapping, history, and portable project state. */
+/* Shared source data and undo history; chart styling stays in each builder. */
 (() => {
   const $ = (s) => document.querySelector(s),
     modes = ["sankey", "donut", "bar", "line", "scatter", "map"];
-  const examples = {
-    sankey: [
-      ["Source", "Target", "Value"],
-      ["Website", "Enquiry", "120"],
-      ["Social", "Enquiry", "80"],
-      ["Enquiry", "Sale", "65"],
-      ["Enquiry", "Follow-up", "135"],
-    ],
-    bar: [
-      ["Category", "Series", "Value"],
-      ["North", "Income", "120"],
-      ["North", "Costs", "-45"],
-      ["South", "Income", "95"],
-      ["South", "Costs", "-55"],
-    ],
-    donut: [
-      ["Category", "2025", "2026"],
-      ["Research", "35", "40"],
-      ["Design", "25", "30"],
-      ["Engineering", "40", "30"],
-    ],
-    line: [
-      ["Month", "Series", "Value"],
-      ["2026-01-01", "Visitors", "120"],
-      ["2026-02-01", "Visitors", "155"],
-      ["2026-03-01", "Visitors", "135"],
-      ["2026-04-01", "Visitors", "190"],
-    ],
-    scatter: [
-      ["X", "Y", "Series", "Label"],
-      ["12", "22", "North", "A"],
-      ["18", "29", "North", "B"],
-      ["25", "41", "South", "C"],
-      ["32", "44", "South", "D"],
-    ],
-    map: [
-      ["Latitude", "Longitude", "Name", "Value", "Category"],
-      ["51.5074", "-0.1278", "London", "120", "South"],
-      ["53.4808", "-2.2426", "Manchester", "80", "North"],
-      ["55.9533", "-3.1883", "Edinburgh", "60", "North"],
-    ],
-  };
-  const roles = {
-    sankey: ["Source", "Target", "Value", "Period"],
-    bar: ["Category", "Value", "Series", "Period"],
-    donut: ["Category", "Value"],
-    line: ["X", "Value", "Series", "Target", "Note"],
-    scatter: ["X", "Y", "Series", "Size", "Label", "Period"],
-    map: [
-      "Latitude",
-      "Longitude",
-      "Postcode",
-      "Ward",
-      "Council",
-      "Location",
-      "Name",
-      "Value",
-      "Category",
-      "Colour",
-    ],
-  };
-  const aliases = {
-    Category: ["CATEGORY", "NAME", "LABEL", "SERVICE", "GROUP"],
-    Value: [
-      "VALUE",
-      "AMOUNT",
-      "COUNT",
-      "TOTAL",
-      "NUMBER",
-      "SCORE",
-      "RATE",
-      "Y",
-    ],
-    X: ["X", "DATE", "TIME", "MONTH", "YEAR", "PERIOD", "CATEGORY"],
-    Y: ["Y", "VALUE", "OUTPUT"],
-    Series: ["SERIES", "GROUP", "TYPE", "MEASURE"],
-    Size: ["SIZE", "WEIGHT", "VOLUME"],
-    Label: ["LABEL", "NAME"],
-    Name: ["NAME", "LABEL", "SITE"],
-    Latitude: ["LATITUDE", "LAT"],
-    Longitude: ["LONGITUDE", "LON", "LNG"],
-    Colour: ["COLOUR", "COLOR", "HEX"],
-  };
-  const guide = {
-    sankey:
-      "Show flows between stages. Columns: Source, Target, Value. Values must be positive.",
-    bar: "Compare categories, including gains and losses. Columns: Category, Value. Add Series for stacked bars.",
-    donut:
-      "Show parts of a whole. Put categories first, followed by positive numeric columns. Multiple value columns become periods.",
-    line: "Show change over time. Use X or Date, Value, and optionally Series. Use ISO dates such as 2026-01-01.",
-    scatter:
-      "Explore relationships. Use numeric X and Y columns; add Series, Size, Label or Period as needed.",
-    map: "Map places or regions. Use Latitude / Longitude, Postcode, Council, or Ward. Add Council to disambiguate wards. The sample uses coordinates and needs no geocoding.",
-  };
+  const examples = window.chartSamples;
   let data = [Array(4).fill("")],
     mode = "sankey",
-    mappings = {},
     states = {},
     undo = [],
     redo = [],
+    selecting = false,
     selection = null,
     editSnapshot = null,
-    remember = false,
-    persistTimer,
     renderTimer;
   const frames = Object.fromEntries(
     modes.map((n) => [n, document.getElementById("panel-" + n)]),
@@ -130,7 +35,6 @@
       version: 1,
       data: copy(data),
       mode,
-      mappings: copy(mappings),
       states: copy(states),
     };
   }
@@ -138,14 +42,17 @@
     undo.push(snapshot);
     if (undo.length > 50) undo.shift();
     redo = [];
-    historyButtons();
-  }
-  function historyButtons() {
-    $("#undo").disabled = !undo.length;
-    $("#redo").disabled = !redo.length;
   }
   function normalise() {
-    const width = Math.max(4, ...data.map((r) => r.length));
+    const used = data.reduce(
+      (max, row) =>
+        row.reduce(
+          (n, v, i) => (String(v ?? "").trim() ? Math.max(n, i) : n),
+          max,
+        ),
+      -1,
+    );
+    const width = Math.max(8, used + 2);
     data.forEach((r) => {
       while (r.length < width) r.push("");
     });
@@ -170,116 +77,142 @@
       rn.textContent = r || "#";
       tr.append(rn);
       row.forEach((value, c) => {
-        const td = document.createElement("td");
-        td.contentEditable = "plaintext-only";
-        td.tabIndex = 0;
-        td.dataset.r = r;
-        td.dataset.c = c;
-        td.textContent = value;
-        td.setAttribute(
-          "aria-label",
-          (r ? "Row " + r : "Header") + ", column " + (c + 1),
-        );
-        td.onfocus = () => {
-          editSnapshot = capture();
-        };
-        td.onblur = () => {
-          if (
-            editSnapshot &&
-            JSON.stringify(editSnapshot.data) !== JSON.stringify(data)
-          ) {
-            checkpoint(editSnapshot);
-            editSnapshot = null;
-          }
-          if (!cellAt(data.length - 1, 0) || filled(data.at(-1))) renderGrid();
-          refreshMapping();
-        };
-        td.onpointerdown = (e) => {
-          if (e.shiftKey && selection) {
-            e.preventDefault();
-            selection.end = { r, c };
-          } else selection = { start: { r, c }, end: { r, c } };
-          paintSelection();
-        };
-        td.oninput = () => {
-          data[r][c] = td.textContent;
-          clearTimeout(renderTimer);
-          renderTimer = setTimeout(() => {
-            refreshMapping();
-            push();
-            persist();
-          }, 200);
-        };
-        td.onpaste = (e) => {
-          e.preventDefault();
-          try {
-            const incoming = ChartUtils.parseDelimited(
-              e.clipboardData.getData("text/plain"),
-            );
-            if (
-              incoming.length + r > 10001 ||
-              Math.max(...incoming.map((x) => x.length)) + c > 100
-            )
-              throw Error("Limit: 10,000 rows and 100 columns.");
-            checkpoint();
-            while (data.length < r + incoming.length) data.push([]);
-            incoming.forEach((row, i) =>
-              row.forEach((v, j) => (data[r + i][c + j] = v)),
-            );
-            editSnapshot = null;
-            renderGrid({ r, c });
-            refreshMapping();
-            push();
-            persist();
-          } catch (error) {
-            notice(error.message);
-          }
-        };
-        td.onkeydown = (e) => {
-          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
-            e.preventDefault();
-            e.shiftKey ? redoAction() : undoAction();
-            return;
-          }
-          if (
-            e.key === "Delete" &&
-            selection &&
-            (selection.start.r !== selection.end.r ||
-              selection.start.c !== selection.end.c)
-          ) {
-            e.preventDefault();
-            checkpoint();
-            for (
-              let i = Math.min(selection.start.r, selection.end.r);
-              i <= Math.max(selection.start.r, selection.end.r);
-              i++
-            )
-              for (
-                let j = Math.min(selection.start.c, selection.end.c);
-                j <= Math.max(selection.start.c, selection.end.c);
-                j++
-              )
-                data[i][j] = "";
-            selection = null;
-            renderGrid({ r, c });
-            refreshMapping();
-            push();
-            persist();
-            return;
-          }
-          if (e.key === "Enter") {
-            e.preventDefault();
-            if (r === data.length - 1)
-              data.push(Array(data[0].length).fill(""));
-            renderGrid({ r: Math.max(0, r + (e.shiftKey ? -1 : 1)), c });
-          }
-        };
+        const td = createCell(value, r, c);
         tr.append(td);
       });
       (r ? body : head).append(tr);
     });
     if (focus) cellAt(focus.r, focus.c)?.focus();
     paintSelection();
+  }
+  function createCell(value, r, c) {
+    const td = document.createElement("td");
+    td.contentEditable = "plaintext-only";
+    td.tabIndex = 0;
+    td.dataset.r = r;
+    td.dataset.c = c;
+    td.textContent = value;
+    td.setAttribute(
+      "aria-label",
+      (r ? "Row " + r : "Header") + ", column " + (c + 1),
+    );
+    td.onfocus = () => {
+      editSnapshot = capture();
+    };
+    td.onblur = () => {
+      if (
+        editSnapshot &&
+        JSON.stringify(editSnapshot.data) !== JSON.stringify(data)
+      ) {
+        checkpoint(editSnapshot);
+        editSnapshot = null;
+      }
+      if (!cellAt(data.length - 1, 0) || filled(data.at(-1))) renderGrid();
+    };
+    td.onpointerdown = (e) => {
+      if (e.button !== 0) return;
+      selecting = true;
+      if (e.shiftKey && selection) {
+        e.preventDefault();
+        selection.end = { r, c };
+      } else selection = { start: { r, c }, end: { r, c } };
+      paintSelection();
+    };
+    td.onpointerenter = () => {
+      if (selecting && selection) {
+        selection.end = { r, c };
+        paintSelection();
+      }
+    };
+    td.oninput = () => {
+      data[r][c] = td.textContent;
+      growGrid();
+      clearTimeout(renderTimer);
+      renderTimer = setTimeout(() => {
+        push();
+      }, 200);
+    };
+    td.onpaste = (e) => {
+      e.preventDefault();
+      try {
+        const incoming = ChartUtils.parseDelimited(
+          e.clipboardData.getData("text/plain"),
+        );
+        if (
+          incoming.length + r > 10001 ||
+          Math.max(...incoming.map((x) => x.length)) + c > 100
+        )
+          throw Error("Limit: 10,000 rows and 100 columns.");
+        checkpoint();
+        while (data.length < r + incoming.length) data.push([]);
+        incoming.forEach((row, i) =>
+          row.forEach((v, j) => (data[r + i][c + j] = v)),
+        );
+        editSnapshot = null;
+        renderGrid({ r, c });
+
+        push();
+      } catch (error) {
+        notice(error.message);
+      }
+    };
+    td.onkeydown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        e.shiftKey ? redoAction() : undoAction();
+        return;
+      }
+      if (
+        e.key === "Delete" &&
+        selection &&
+        (selection.start.r !== selection.end.r ||
+          selection.start.c !== selection.end.c)
+      ) {
+        e.preventDefault();
+        checkpoint();
+        for (
+          let i = Math.min(selection.start.r, selection.end.r);
+          i <= Math.max(selection.start.r, selection.end.r);
+          i++
+        )
+          for (
+            let j = Math.min(selection.start.c, selection.end.c);
+            j <= Math.max(selection.start.c, selection.end.c);
+            j++
+          )
+            data[i][j] = "";
+        selection = null;
+        renderGrid({ r, c });
+
+        push();
+
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (r === data.length - 1) data.push(Array(data[0].length).fill(""));
+        renderGrid({ r: Math.max(0, r + (e.shiftKey ? -1 : 1)), c });
+      }
+    };
+
+    return td;
+  }
+  function growGrid() {
+    normalise();
+    const table = $("#grid");
+    data.forEach((row, r) => {
+      let tr = table.rows[r];
+      if (!tr) {
+        tr = table.tBodies[0].insertRow();
+        const rn = document.createElement("th");
+        rn.className = "rn";
+        rn.scope = "row";
+        rn.textContent = r;
+        tr.append(rn);
+      }
+      for (let c = tr.cells.length - 1; c < row.length; c++)
+        tr.append(createCell(row[c], r, c));
+    });
   }
   function paintSelection() {
     document.querySelectorAll("#grid td").forEach((td) => {
@@ -295,80 +228,6 @@
           c <= Math.max(s.start.c, s.end.c),
       );
     });
-  }
-  function infer(role) {
-    const header = data[0] || [],
-      matches = aliases[role] || [norm(role)];
-    let i = header.findIndex((x) => norm(x) === norm(role));
-    if (i < 0) i = header.findIndex((x) => matches.includes(norm(x)));
-    if (i >= 0) return i;
-    const numeric = header
-      .map((_, j) => j)
-      .filter((j) =>
-        data.slice(1).some((r) => Number.isFinite(ChartUtils.number(r[j]))),
-      );
-    if (role === "Value") return numeric[0] ?? -1;
-    if (role === "Category")
-      return header.findIndex(
-        (x, j) => String(x).trim() && !numeric.includes(j),
-      );
-    return -1;
-  }
-  function refreshMapping() {
-    const m = mappings[mode] || { enabled: false, columns: {} };
-    $("#mapping-enabled").checked = m.enabled;
-    const box = $("#mapping-fields");
-    box.replaceChildren();
-    const choices = [];
-    roles[mode].forEach((role) => {
-      const index = m.columns[role] ?? infer(role),
-        label = document.createElement("label");
-      label.textContent = role;
-      const select = document.createElement("select");
-      const empty = document.createElement("option");
-      empty.value = -1;
-      empty.textContent = "Not used";
-      select.append(empty);
-      data[0].forEach((name, i) => {
-        if (!name.trim()) return;
-        const o = document.createElement("option");
-        o.value = i;
-        o.textContent = name;
-        select.append(o);
-      });
-      select.value = index;
-      select.disabled = !m.enabled;
-      select.onchange = () => {
-        checkpoint();
-        mappings[mode] ||= { enabled: true, columns: {} };
-        mappings[mode].columns[role] = +select.value;
-        push();
-        persist();
-        refreshMapping();
-      };
-      label.append(select);
-      box.append(label);
-      if (index >= 0) choices.push(role + ": " + data[0][index]);
-    });
-    $("#interpretation").textContent = m.enabled
-      ? "Using " + choices.join(" · ")
-      : "Automatic detection. Suggested roles: " +
-        (choices.join(" · ") || "paste a header row to identify columns") +
-        ". Wide tables may produce multiple series or periods.";
-    $("#mapping-summary").textContent = m.enabled
-      ? "Column mapping · explicit"
-      : "Column mapping · automatic";
-  }
-  function mapped() {
-    const m = mappings[mode];
-    if (!m?.enabled) return copy(data);
-    const active = roles[mode]
-      .map((role) => ({ role, index: m.columns[role] ?? infer(role) }))
-      .filter((x) => x.index >= 0 && x.index < data[0].length);
-    return [
-      active.map((x) => x.role),
-      ...data.slice(1).map((r) => active.map((x) => r[x.index] || "")),
-    ];
   }
   function diagnostics(table) {
     const h = table[0] || [],
@@ -430,7 +289,7 @@
     $("#diagnostics").textContent = issues.join("\n");
   }
   function push() {
-    const table = mapped();
+    const table = copy(data);
     diagnostics(table);
     const b = frames[mode].contentWindow?.chartBridge;
     if (!b) return;
@@ -447,16 +306,16 @@
     document.querySelectorAll(".mode").forEach((b) => {
       const active = b.dataset.mode === mode;
       b.setAttribute("aria-selected", active);
+      b.classList.toggle("active", active);
       b.tabIndex = active ? 0 : -1;
     });
     for (const n of modes) {
       frames[n].classList.toggle("active", n === mode);
       frames[n].hidden = n !== mode;
     }
-    $("#data-heading").textContent =
-      "Build a " + (mode === "map" ? "map" : mode + " chart");
-    $("#guide").textContent = guide[mode];
-    refreshMapping();
+    updateTitle();
+    moveIndicator();
+
     const f = frames[mode];
     if (!f.getAttribute("src")) f.src = f.dataset.src;
     else {
@@ -464,7 +323,6 @@
       f.contentWindow.dispatchEvent(new Event("resize"));
     }
     history.replaceState(null, "", "#" + mode);
-    persist();
   }
   for (const n of modes) {
     frames[n].onload = () => {
@@ -499,28 +357,11 @@
       }
     };
   });
-  function persist() {
-    clearTimeout(persistTimer);
-    persistTimer = setTimeout(() => {
-      if (!remember) return;
-      try {
-        localStorage.setItem(
-          "data-visualisation-project",
-          JSON.stringify(capture()),
-        );
-        $("#storage-note").textContent =
-          "Saved on this device. Uncheck to remove the saved copy.";
-      } catch {
-        $("#storage-note").textContent =
-          "Device storage is unavailable or full. Use Save project.";
-      }
-    }, 400);
-  }
   function restore(p) {
     ChartUtils.validateProject(p);
     data = copy(p.data);
     mode = p.mode;
-    mappings = copy(p.mappings || {});
+
     states = copy(p.states || {});
     selection = null;
     editSnapshot = null;
@@ -538,8 +379,6 @@
     push();
     if (states[mode])
       frames[mode].contentWindow?.chartBridge?.setState(states[mode]);
-    historyButtons();
-    persist();
   }
   function undoAction() {
     if (
@@ -561,126 +400,30 @@
     restore(redo.pop());
     notice("Redone.");
   }
-  $("#undo").onclick = undoAction;
-  $("#redo").onclick = redoAction;
+
   $("#sample").onclick = () => {
     checkpoint();
     data = copy(examples[mode]);
-    mappings[mode] = { enabled: false, columns: {} };
+
     selection = null;
     renderGrid();
-    refreshMapping();
+
     push();
-    persist();
+
     notice("Sample loaded. Undo restores your previous data.");
-  };
-  $("#mapping-enabled").onchange = (e) => {
-    checkpoint();
-    mappings[mode] ||= { columns: {} };
-    mappings[mode].enabled = e.target.checked;
-    refreshMapping();
-    push();
-    persist();
-  };
-  $("#add-row").onclick = () => {
-    if (data.length > 10000) {
-      notice("Maximum 10,000 data rows.");
-      return;
-    }
-    checkpoint();
-    data.push(Array(data[0].length).fill(""));
-    renderGrid({ r: data.length - 1, c: 0 });
-  };
-  $("#add-column").onclick = () => {
-    if (data[0].length >= 100) {
-      notice("Maximum 100 columns.");
-      return;
-    }
-    checkpoint();
-    data.forEach((r) => r.push(""));
-    renderGrid({ r: 0, c: data[0].length - 1 });
-    refreshMapping();
   };
   $("#clear").onclick = () => {
     checkpoint();
     data = [Array(4).fill("")];
-    mappings = {};
+
     states = {};
     selection = null;
     for (const n of modes) frames[n].contentWindow?.chartBridge?.resetAll();
     renderGrid();
-    refreshMapping();
+
     push();
-    persist();
+
     notice("Project reset. Undo restores the previous project.");
-  };
-  $("#save").onclick = () => {
-    const url = URL.createObjectURL(
-        new Blob([JSON.stringify(capture(), null, 2)], {
-          type: "application/json",
-        }),
-      ),
-      a = document.createElement("a");
-    a.href = url;
-    a.download = "visualisation-project.json";
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    notice("Project saved with data, column mappings and chart settings.");
-  };
-  async function readFile(input, project) {
-    const file = input.files[0];
-    if (!file) return;
-    try {
-      if (file.size > 10 * 1024 * 1024)
-        throw Error("Choose a file smaller than 10 MB.");
-      const text = await file.text();
-      if (project) {
-        const p = ChartUtils.validateProject(JSON.parse(text));
-        checkpoint();
-        restore(p);
-      } else {
-        const rows = ChartUtils.parseDelimited(text);
-        ChartUtils.validateProject({ version: 1, data: rows, mode });
-        checkpoint();
-        data = rows;
-        mappings = {};
-        renderGrid();
-        refreshMapping();
-        push();
-        persist();
-      }
-      notice(
-        project
-          ? "Project opened."
-          : "Data imported. Check the column mapping.",
-      );
-    } catch (e) {
-      notice(e.message);
-    }
-    input.value = "";
-  }
-  $("#import-data").onchange = (e) => readFile(e.target, false);
-  $("#open-project").onchange = (e) => readFile(e.target, true);
-  document.querySelectorAll(".file-button").forEach((label) => {
-    label.tabIndex = 0;
-    label.setAttribute("role", "button");
-    label.onkeydown = (e) => {
-      if (["Enter", " "].includes(e.key)) {
-        e.preventDefault();
-        label.querySelector("input").click();
-      }
-    };
-  });
-  $("#remember").onchange = (e) => {
-    remember = e.target.checked;
-    if (remember) persist();
-    else {
-      try {
-        localStorage.removeItem("data-visualisation-project");
-      } catch {}
-      $("#storage-note").textContent =
-        "Saved device copy removed. Use Save project to keep your work.";
-    }
   };
   window.addEventListener("message", (e) => {
     if (e.origin !== location.origin) return;
@@ -689,36 +432,62 @@
     if (e.data.type === "chart-height" && Number.isFinite(e.data.height))
       frames[n].style.height =
         Math.min(8000, Math.max(300, e.data.height)) + "px";
-    if (e.data.type === "chart-changed") persist();
   });
   window.addEventListener("hashchange", () => {
     if (modes.includes(location.hash.slice(1)))
       activate(location.hash.slice(1));
   });
-  window.addEventListener("beforeunload", (e) => {
-    if (!remember && data.some(filled)) {
-      e.preventDefault();
-      e.returnValue = "";
-    }
+  document.addEventListener("pointerup", () => (selecting = false));
+  let lastY = scrollY;
+  function updateTitle(next = mode) {
+    $("#activeTitle").textContent =
+      next === "map"
+        ? "Map builder"
+        : next === "scatter"
+          ? "Scatter plot builder"
+          : next === "sankey"
+            ? "Sankey builder"
+            : next[0].toUpperCase() + next.slice(1) + " chart builder";
+  }
+  function moveIndicator() {
+    const button = document.querySelector(".mode.active");
+    if (button)
+      document
+        .querySelector(".modes")
+        .style.setProperty("--x", button.offsetLeft - 3 + "px");
+  }
+  document.querySelectorAll(".mode").forEach((b) => {
+    b.onmouseenter = () => updateTitle(b.dataset.mode);
+    b.onmouseleave = () => updateTitle();
+  });
+  addEventListener("resize", moveIndicator);
+  addEventListener(
+    "scroll",
+    () => {
+      const y = scrollY,
+        down = y > lastY + 4,
+        up = y < lastY - 4;
+      if (y < 70 || up)
+        document.querySelector(".top").classList.remove("hidden");
+      else if (down && y > 120)
+        document.querySelector(".top").classList.add("hidden");
+      lastY = y;
+    },
+    { passive: true },
+  );
+  document.addEventListener("keydown", (e) => {
+    if (
+      e.defaultPrevented ||
+      !(e.ctrlKey || e.metaKey) ||
+      e.key.toLowerCase() !== "z"
+    )
+      return;
+    e.preventDefault();
+    e.shiftKey ? redoAction() : undoAction();
   });
   renderGrid();
-  let saved;
-  try {
-    saved = JSON.parse(localStorage.getItem("data-visualisation-project"));
-  } catch {}
-  if (saved) {
-    try {
-      remember = true;
-      $("#remember").checked = true;
-      restore(saved);
-      notice("Restored the project saved on this device.");
-    } catch {
-      activate("sankey");
-    }
-  } else
-    activate(
-      modes.includes(location.hash.slice(1))
-        ? location.hash.slice(1)
-        : "sankey",
-    );
+  activate(
+    modes.includes(location.hash.slice(1)) ? location.hash.slice(1) : "sankey",
+  );
+  requestAnimationFrame(moveIndicator);
 })();

@@ -5,6 +5,12 @@ const fs = require("node:fs"),
   acorn = require("acorn");
 const { JSDOM } = require("jsdom");
 const utils = require("../assets/shared.js");
+const samplesContext = { window: {} };
+vm.runInNewContext(
+  fs.readFileSync("assets/samples.js", "utf8"),
+  samplesContext,
+);
+const samples = samplesContext.window.chartSamples;
 function harness(name) {
   const dom = new JSDOM(fs.readFileSync(`builders/${name}.html`, "utf8"), {
     runScripts: "outside-only",
@@ -382,4 +388,88 @@ test("ambiguous wards are not silently assigned to a guessed council", () => {
     ).features[0].properties.LAD25NM,
     "South",
   );
+});
+
+test("all chart samples render multiple series, periods or categories", () => {
+  for (const name of ["bar", "donut", "sankey", "line", "scatter"]) {
+    const h = harness(name);
+    try {
+      h.w.chartBridge.setData(samples[name]);
+      assert.ok(
+        h.w.document.querySelectorAll("#svg path,#svg rect,#svg circle")
+          .length > 5,
+        name,
+      );
+      assert.equal(
+        h.w.document.querySelector("#status")?.textContent || "",
+        "",
+        name,
+      );
+    } finally {
+      h.dom.window.close();
+    }
+  }
+});
+
+test("donut leaders have one angled segment followed by a horizontal segment", () => {
+  const h = harness("donut");
+  try {
+    h.w.chartBridge.setData(samples.donut);
+    const lines = [...h.w.document.querySelectorAll(".leader")];
+    assert.equal(lines.length, 8);
+    for (const line of lines) {
+      const points = line
+        .getAttribute("points")
+        .split(/[,\s]+/)
+        .map(Number);
+      assert.equal(points.length, 6);
+      assert.equal(points[3], points[5]);
+      assert.ok(Math.abs(points[4] - points[2]) > 10);
+    }
+  } finally {
+    h.dom.window.close();
+  }
+});
+
+test("mixed ward and postcode tables resolve both layers and report unmatched pins", async () => {
+  const context = {
+    clean: (x) => String(x || "").trim(),
+    norm: (x) => String(x || "").toUpperCase(),
+    fetchArea: async (p) => ({
+      kind: "area",
+      p,
+      missing: [],
+      gj: { features: [] },
+    }),
+    fetchJSONResponse: async () => ({
+      json: async () => ({
+        result: [
+          { query: "NW1 1BD", result: { latitude: 51.5, longitude: -0.1 } },
+        ],
+      }),
+    }),
+  };
+  vm.createContext(context);
+  vm.runInContext(mapFunction("prepare"), context);
+  const p = {
+    geo: "ward",
+    I: { ward: 0, wardcode: -1, council: 1, councilcode: -1, postcode: 2 },
+    d: [
+      ["Camden Town", "Camden", ""],
+      ["", "Camden", "NW1 1BD"],
+      ["", "Camden", "INVALID"],
+    ],
+  };
+  const result = await context.prepare(p);
+  assert.equal(result.kind, "area");
+  assert.equal(result.p.d.length, 1);
+  assert.equal(result.points.coords.length, 1);
+  assert.deepEqual(Array.from(result.missing), ["INVALID"]);
+  context.fetchArea = async () => {
+    throw Error("Boundary service unavailable");
+  };
+  const fallback = await context.prepare(p);
+  assert.equal(fallback.kind, "points");
+  assert.equal(fallback.coords.length, 1);
+  assert.ok(fallback.missing.includes("Camden Town"));
 });

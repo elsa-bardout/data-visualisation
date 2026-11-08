@@ -417,7 +417,7 @@ function applyMapOpacity() {
 }
 function updateRelevantControls() {
   let area = current?.kind === "area",
-    points = current?.kind === "points";
+    points = current?.kind === "points" || !!current?.points;
   $("#fillOpacityControl").classList.toggle(
     "isHidden",
     !area || boundaryMode === "outline",
@@ -735,6 +735,45 @@ async function geocodeRows(p, ni) {
   return coords.length ? { kind: "points", p, coords } : null;
 }
 async function prepare(p) {
+  // A table may contain ward boundaries and postcode pins. Resolve both sets;
+  // neither a postcode column nor blank ward cells should discard the other.
+  if (["ward", "council"].includes(p.geo) && p.I.postcode >= 0) {
+    const ni =
+      p.geo === "ward"
+        ? p.I.wardcode >= 0
+          ? p.I.wardcode
+          : p.I.ward
+        : p.I.councilcode >= 0
+          ? p.I.councilcode
+          : p.I.council;
+    const areaRows = p.d.filter(
+      (r) => clean(r[ni]) && (p.geo === "ward" || !clean(r[p.I.postcode])),
+    );
+    const pinRows = p.d.filter((r) => clean(r[p.I.postcode]));
+    if (pinRows.length) {
+      const [areaResult, pinResult] = await Promise.allSettled([
+        areaRows.length
+          ? fetchArea({ ...p, d: areaRows }, p.geo, ni)
+          : Promise.resolve(null),
+        prepare({ ...p, geo: "postcode", d: pinRows }),
+      ]);
+      const area = areaResult.status === "fulfilled" ? areaResult.value : null;
+      const points = pinResult.status === "fulfilled" ? pinResult.value : null;
+      if (!area && !points)
+        throw Error("No ward boundaries or postcode pins could be resolved.");
+      const result = area || points;
+      result.missing = [...(area?.missing || [])];
+      if (areaRows.length && !area)
+        result.missing.push(...areaRows.map((r) => clean(r[ni])));
+      result.missing.push(
+        ...pinRows
+          .filter((r) => !points?.coords.some((x) => x.r === r))
+          .map((r) => clean(r[p.I.postcode])),
+      );
+      if (area && points) area.points = points;
+      return result;
+    }
+  }
   if (p.geo === "ward") {
     let ni = p.I.wardcode >= 0 ? p.I.wardcode : p.I.ward,
       a = await fetchArea(p, "ward", ni);
@@ -813,8 +852,9 @@ async function build() {
     map.invalidateSize(false);
     render();
     const missing = current.missing || [];
-    const skipped =
-      current.kind === "points"
+    const skipped = current.missing?.length
+      ? current.missing.length
+      : current.kind === "points"
         ? p.d.length - current.coords.length
         : missing.length;
     status(
@@ -837,6 +877,14 @@ function render() {
   updateRelevantControls();
   let z =
     current.kind === "area" ? renderAreaSet(current) : renderPointSet(current);
+  if (current.points) {
+    const pins = renderPointSet(current.points);
+    z.items.push(...pins.items);
+    z.bounds.extend(pins.bounds);
+    z.legend.push(
+      ...pins.legend.map((item) => ({ ...item, n: "Pins · " + item.n })),
+    );
+  }
   renderedItems = z.items;
   currentBounds = z.bounds;
   if (z.bounds?.isValid?.()) {

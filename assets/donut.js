@@ -186,10 +186,9 @@ function draw(target, D, interactive = false) {
     .attr("points", (x) => {
       let side = Math.sin(x.a) >= 0 ? 1 : -1,
         start = [Math.sin(x.a) * (r + 2), -Math.cos(x.a) * (r + 2)],
-        radial = [Math.sin(x.a) * (r + 26), -Math.cos(x.a) * (r + 26)],
-        elbow = [side * (r + 50), x.y],
+        elbow = [start[0] + side * 24, x.y],
         end = [side * (lx - 7), x.y];
-      return [start, radial, elbow, end];
+      return [start, elbow, end];
     });
   let l = g
     .selectAll(".lab")

@@ -4,9 +4,11 @@ A static, browser-based chart builder for Sankey, bar, donut/pie, line, scatter,
 
 ## Use
 
-Choose a chart and try its sample, paste a spreadsheet range with a header row, or import CSV/TSV. Open **Column mapping** to inspect suggested roles or choose columns explicitly. The source table stays intact when changing chart type. Missing, invalid, and nonpositive values are reported where applicable.
+Choose an icon in the floating toolbar, then paste a spreadsheet range or try the chart's sample. The toolbar hides on scrolling down and returns on scrolling up. Hover an icon to see its chart name.
 
-Use **Save project** and **Open project** to retain the source table, mappings, chart controls, and colours. Device persistence is opt-in; unchecking it removes the saved device copy. Undo/redo covers source edits, sample replacement, mapping changes, and reset. It is not a history of every chart-control movement.
+The table automatically grows an empty row and column as you type or paste. The bin resets data and charts; Ctrl/Cmd+Z undoes data edits, samples and resets (Shift+Ctrl/Cmd+Z redoes). The source table stays in place when switching charts. Chart settings and data stay in memory for the current page session.
+
+Samples demonstrate multiple periods, series, signed stacks, targets, annotations and bubble sizes. Values are fictional. The map combines all 20 [Camden wards](https://www.ons.gov.uk/explore-local-statistics/areas/E09000007-camden) with three [library postcode locations](https://www.camden.gov.uk/libraries-opening-times). Ward and pin rows are separate so each has its own value; the Council column disambiguates ward names.
 
 Charts support SVG, PNG, and standalone HTML exports. HTML snapshots retain period selection, colours, and tooltips. Map HTML includes resolved geographic data and local application code, but still needs online Leaflet resources and basemap tiles. Map SVG contains vector shapes and labels without basemap tiles; PNG includes the rendered basemap when its provider permits cross-origin capture.
 
@@ -34,12 +36,13 @@ pnpm check
 
 ## Structure
 
-- `index.html`, `assets/app.js`, and `assets/app.css`: shared data editor, import, explicit mapping, history, and project storage.
+- `index.html`, `assets/app.js`, and `assets/app.css`: shared data editor, automatic table growth, navigation, and undo history.
+- `assets/samples.js`: chart-specific demonstration tables.
 - `builders/*.html`: chart document markup, loaded on demand.
 - `assets/<chart>.js` and `.css`: chart-specific parsing, rendering, and settings.
 - `assets/shared.js`: numeric parsing, delimited-text parsing, project validation, safe tooltip formatting, and signed extents.
 - `assets/export.js`: standalone chart HTML exports without dependencies on builder globals.
-- `assets/builder.js` and `.css`: common accessibility, keyboard ordering, state access, responsive preview styling, and iframe sizing.
-- `tests/`: isolated DOM and unit regressions covering data interpretation, exports, signed values, mapping/history, and asynchronous map behaviour.
+- `assets/builder.js` and `.css`: common accessibility, state access, responsive preview styling, and iframe sizing.
+- `tests/`: isolated DOM and unit regressions covering data interpretation, exports, signed values, history, and asynchronous map behaviour.
 
 The map redesign from `map-redesign` is the baseline for this version. Existing branch history is preserved.

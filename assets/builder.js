@@ -36,7 +36,7 @@
     bridge.setState({ settings: initial, controls: initialControls });
   };
   const summary = document.createElement("p");
-  summary.className = "chart-summary";
+  summary.className = "sr-only";
   summary.id = "chart-summary";
   summary.textContent = "Paste data or choose a sample to start.";
   document.querySelector(".card").append(summary);
@@ -151,7 +151,7 @@
       "#svg .barRect,#svg .pointHit,#svg .slice,#svg .node",
     ).length;
     const message = count
-      ? `${count} chart marks. Use Tab to inspect values; the source table is available above. Drag to reorder where supported, or use the order controls.`
+      ? `${count} chart marks. Use Tab to inspect values; the source table is available above.`
       : mode === "map"
         ? "Use the map controls to change its appearance. Geographic lookups require an internet connection."
         : "Paste data or choose a sample to start.";
@@ -202,47 +202,5 @@
     if (parent !== window)
       parent.postMessage({ type: "chart-changed", mode }, location.origin);
   });
-  if (["bar", "donut", "sankey"].includes(mode)) {
-    const box = document.createElement("div");
-    box.className = "keyboard-order";
-    const label = document.createElement("label");
-    label.textContent = "Reorder ";
-    const select = document.createElement("select");
-    select.setAttribute("aria-label", "Item to reorder");
-    label.append(select);
-    box.append(label);
-    for (const [text, delta] of [
-      ["Move up", -1],
-      ["Move down", 1],
-    ]) {
-      const button = document.createElement("button");
-      button.className = "btn";
-      button.textContent = text;
-      button.onclick = () => {
-        window.chartSettings.move(select.value, delta);
-        enhance();
-        if (parent !== window)
-          parent.postMessage({ type: "chart-changed", mode }, location.origin);
-      };
-      box.append(button);
-    }
-    document.querySelector(".card").append(box);
-    window.refreshOrderControls = () => {
-      const items = window.chartSettings.items();
-      const signature = JSON.stringify(items);
-      if (select.dataset.items === signature) return;
-      const selected = select.value;
-      select.replaceChildren();
-      items.forEach((x) => {
-        const o = document.createElement("option");
-        o.value = x.id;
-        o.textContent = x.name;
-        select.append(o);
-      });
-      if (items.some((x) => x.id === selected)) select.value = selected;
-      select.dataset.items = signature;
-      box.hidden = !items.length;
-    };
-  }
   enhance();
 })();

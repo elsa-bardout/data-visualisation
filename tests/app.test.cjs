@@ -12,7 +12,7 @@ function app() {
     w = dom.window;
   w.structuredClone = structuredClone;
   const context = dom.getInternalVMContext();
-  for (const file of ["shared", "app"])
+  for (const file of ["shared", "samples", "app"])
     new vm.Script(
       fs.readFileSync("assets/" + file + ".js", "utf8"),
     ).runInContext(context);
@@ -31,12 +31,20 @@ test("sample, reset and undo restore source data", () => {
       h.doc.querySelector('[data-r="1"][data-c="0"]').textContent,
       "",
     );
-    h.doc.querySelector("#undo").click();
+    h.doc.dispatchEvent(
+      new h.w.KeyboardEvent("keydown", { key: "z", ctrlKey: true }),
+    );
     assert.equal(
       h.doc.querySelector('[data-r="1"][data-c="0"]').textContent,
       "Website",
     );
-    h.doc.querySelector("#redo").click();
+    h.doc.dispatchEvent(
+      new h.w.KeyboardEvent("keydown", {
+        key: "z",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
     assert.equal(
       h.doc.querySelector('[data-r="1"][data-c="0"]').textContent,
       "",
@@ -45,7 +53,7 @@ test("sample, reset and undo restore source data", () => {
     h.dom.window.close();
   }
 });
-test("explicit mapping changes chart input without changing source cells", () => {
+test("switching chart type preserves source cells and automatic interpretation", () => {
   const h = app();
   try {
     h.doc.querySelector("#tab-bar").click();
@@ -57,11 +65,14 @@ test("explicit mapping changes chart input without changing source cells", () =>
       setState() {},
     };
     h.doc.querySelector("#sample").click();
-    const toggle = h.doc.querySelector("#mapping-enabled");
-    toggle.checked = true;
-    toggle.dispatchEvent(new h.w.Event("change"));
-    assert.deepEqual(Array.from(passed[0]), ["Category", "Value", "Series"]);
-    assert.equal(passed[1][1], "120");
+    assert.deepEqual(Array.from(passed[0]).slice(0, 4), [
+      "Category",
+      "Series",
+      "Value",
+      "Period",
+    ]);
+    assert.equal(passed[1][2], "120");
+    h.doc.querySelector("#tab-line").click();
     assert.equal(
       h.doc.querySelector('[data-r="0"][data-c="1"]').textContent,
       "Series",
@@ -101,9 +112,32 @@ test("pasted multiline CSV adds rows and is undoable", () => {
       h.doc.querySelector('[data-r="1"][data-c="0"]').textContent,
       "North, west",
     );
-    h.doc.querySelector("#undo").click();
+    h.doc.dispatchEvent(
+      new h.w.KeyboardEvent("keydown", { key: "z", ctrlKey: true }),
+    );
     assert.equal(
       h.doc.querySelector('[data-r="0"][data-c="0"]').textContent,
+      "",
+    );
+  } finally {
+    h.dom.window.close();
+  }
+});
+
+test("typing at table edges grows a blank row and column without replacing the focused cell", () => {
+  const h = app();
+  try {
+    const cell = h.doc.querySelector('[data-r="1"][data-c="7"]');
+    cell.focus();
+    cell.textContent = "edge";
+    cell.dispatchEvent(new h.w.Event("input"));
+    assert.equal(h.doc.activeElement, cell);
+    assert.equal(
+      h.doc.querySelector('[data-r="1"][data-c="8"]').textContent,
+      "",
+    );
+    assert.equal(
+      h.doc.querySelector('[data-r="2"][data-c="7"]').textContent,
       "",
     );
   } finally {

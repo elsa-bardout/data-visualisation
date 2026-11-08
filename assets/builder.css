@@ -19,34 +19,13 @@ body {
   overflow-x: hidden;
 }
 .app {
-  padding: 14px 18px;
+  padding: 18px;
   min-width: 0;
 }
 .card,
 .chart {
   min-width: 0;
   margin-top: 0;
-}
-.bar,
-.controls,
-.toolbarRow,
-.arrange {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  min-width: 0;
-  max-width: 100% !important;
-}
-.bar {
-  overflow: visible;
-  align-items: flex-start;
-}
-.controls {
-  gap: 16px !important;
-  width: 100% !important;
-}
-.ctrl {
-  font-size: 12px;
-  grid-template-columns: auto 108px max-content !important;
 }
 .canvas {
   overflow: auto;
@@ -77,10 +56,6 @@ body {
   width: 100%;
   font-family: inherit;
 }
-.swatch {
-  min-width: 24px;
-  min-height: 24px;
-}
 .tip {
   white-space: normal;
   max-width: 280px;
@@ -92,22 +67,16 @@ select:focus-visible,
   outline: 3px solid #5653ff;
   outline-offset: 3px;
 }
-.keyboard-order {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  font-size: 12px;
-}
-.keyboard-order select {
-  max-width: 210px;
-  padding: 6px;
-}
-.chart-summary {
-  padding: 10px 20px;
-  font-size: 12px;
-  color: #465463;
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 @media (max-width: 600px) {
   .app {
@@ -118,7 +87,16 @@ select:focus-visible,
   .toolbar {
     padding: 14px;
   }
+  .bar,
+  .controls,
+  .toolbarRow,
+  .arrange {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    max-width: 100%;
+  }
   .controls {
+    width: 100% !important;
     gap: 18px !important;
   }
   .ctrl {
