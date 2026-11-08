@@ -42,12 +42,8 @@ const STAGE_PALETTES = [
 ];
 function nodeColour(d, nodes = model?.nodes || []) {
   if (C[d.name]) return C[d.name];
-  let family = STAGE_PALETTES[d.layer % STAGE_PALETTES.length],
-    names = [
-      ...new Set(nodes.filter((n) => n.layer === d.layer).map((n) => n.name)),
-    ].sort((a, b) => a.localeCompare(b)),
-    i = Math.max(0, names.indexOf(d.name));
-  return family[i % family.length];
+  const names = [...new Set(nodes.map((n) => n.name))];
+  return PALETTE[Math.max(0, names.indexOf(d.name)) % PALETTE.length];
 }
 
 const norm = (s) =>
@@ -560,6 +556,17 @@ function build() {
   if (!rows.length) return clear();
   let parsed = legacyWfsParse(rows) || densifyNodeTables(rows),
     dh = detectHeader(rows);
+  if (
+    !parsed &&
+    hidx(dh.h, ["SERIES"]) >= 0 &&
+    hidx(dh.h, ["SOURCE", "FROM"]) < 0
+  ) {
+    clear();
+    status(
+      "Add Source and Target columns to show where each amount goes, or choose the bar chart for categories and series.",
+    );
+    return;
+  }
   if (!parsed) {
     parsed =
       nodesPlusLinks(dh.h, dh.data) ||
@@ -952,60 +959,73 @@ function legend() {
   });
 }
 function crossingScore(pos) {
-  let score = 0;
+  let score = 0,
+    layer = new Map(model.nodes.map((n) => [n.id, n.layer]));
   for (let i = 0; i < model.links.length; i++)
     for (let j = i + 1; j < model.links.length; j++) {
-      let a = model.links[i],
-        b = model.links[j],
-        as = pos.get(a.source) || 0,
-        bs = pos.get(b.source) || 0,
-        at = pos.get(a.target) || 0,
-        bt = pos.get(b.target) || 0;
-      if ((as - bs) * (at - bt) < 0) score += Math.min(a.value, b.value);
+      const a = model.links[i],
+        b = model.links[j];
+      if (
+        layer.get(a.source) !== layer.get(b.source) ||
+        layer.get(a.target) !== layer.get(b.target)
+      )
+        continue;
+      if (
+        ((pos.get(a.source) || 0) - (pos.get(b.source) || 0)) *
+          ((pos.get(a.target) || 0) - (pos.get(b.target) || 0)) <
+        0
+      )
+        score += Math.min(a.value, b.value);
     }
   return score;
 }
 function detangle() {
-  let candidates = [];
-  for (let t = 0; t < 36; t++) {
-    let pos = new Map(model.nodes.map((n) => [n.id, Math.random()]));
-    for (let z = 0; z < 8; z++)
-      for (const layer of new Set(model.nodes.map((n) => n.layer))) {
-        let ns = model.nodes.filter((n) => n.layer === layer);
-        ns.forEach((n) => {
-          let c = model.links.filter(
-              (x) => x.source === n.id || x.target === n.id,
-            ),
-            w = 0,
-            sum = 0;
-          c.forEach((x) => {
-            let other = x.source === n.id ? x.target : x.source;
-            sum += (pos.get(other) || 0) * x.value;
-            w += x.value;
-          });
-          if (w) pos.set(n.id, sum / w + (Math.random() - 0.5) * 0.15);
-        });
-        ns.sort((a, b) => (pos.get(a.id) || 0) - (pos.get(b.id) || 0)).forEach(
-          (n, i) => pos.set(n.id, i),
-        );
+  let best = new Map(nodeOrder),
+    score = crossingScore(best);
+  const layers = [...new Set(model.nodes.map((n) => n.layer))].sort(
+    (a, b) => a - b,
+  );
+  // Adjacent swaps only commit a strictly better order, so repeated clicks cannot worsen it.
+  for (let pass = 0; pass < 12; pass++) {
+    let improved = false;
+    for (const layer of layers) {
+      const ns = model.nodes
+        .filter((n) => n.layer === layer)
+        .sort((a, b) => (best.get(a.id) || 0) - (best.get(b.id) || 0));
+      for (let i = 0; i < ns.length - 1; i++) {
+        const a = ns[i].id,
+          b = ns[i + 1].id,
+          candidate = new Map(best);
+        candidate.set(a, best.get(b) || 0);
+        candidate.set(b, best.get(a) || 0);
+        const next = crossingScore(candidate);
+        if (next < score) {
+          best = candidate;
+          score = next;
+          improved = true;
+          [ns[i], ns[i + 1]] = [ns[i + 1], ns[i]];
+        }
       }
-    candidates.push({ pos, score: crossingScore(pos) });
+    }
+    if (!improved) break;
   }
-  candidates.sort((a, b) => a.score - b.score);
-  nodeOrder = candidates[detSeed++ % Math.min(6, candidates.length)].pos;
+  nodeOrder = best;
+  sourceLinkOrder.clear();
+  targetLinkOrder.clear();
+  for (const node of model.nodes) {
+    model.links
+      .filter((l) => l.source === node.id)
+      .sort((a, b) => (best.get(a.target) || 0) - (best.get(b.target) || 0))
+      .forEach((l, i) => sourceLinkOrder.set(l.id, i));
+    model.links
+      .filter((l) => l.target === node.id)
+      .sort((a, b) => (best.get(a.source) || 0) - (best.get(b.source) || 0))
+      .forEach((l, i) => targetLinkOrder.set(l.id, i));
+  }
   render();
 }
 function svgText() {
-  let c = $("#svg").cloneNode(true);
-  c.querySelectorAll(".linkHit,.dragPreview,.dragDot").forEach((x) =>
-    x.remove(),
-  );
-  c.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-  let style = document.createElementNS("http://www.w3.org/2000/svg", "style");
-  style.textContent =
-    "text{font-family:Inter,Segoe UI,sans-serif;fill:#17212b}.stage{font-size:11px;font-weight:700;fill:#4d5965;text-anchor:middle}.value{font-size:11px;fill:#707986}.link{fill:none}";
-  c.insertBefore(style, c.firstChild);
-  return new XMLSerializer().serializeToString(c);
+  return ChartExport.frame("Chart").svg;
 }
 function fileBase() {
   return (

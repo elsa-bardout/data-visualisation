@@ -295,6 +295,9 @@ function draw(target, D, interactive = false) {
       .text("Total");
 }
 function render() {
+  if (!titleEdited && periodCols[activePeriod])
+    $("#diagramTitle").value =
+      "Services · " + periodName(periodCols[activePeriod].label);
   let D = {
     data,
     colors: C,
@@ -349,13 +352,7 @@ function openColour(e, n) {
   };
 }
 function svgText() {
-  let c = $("#svg").cloneNode(true);
-  c.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-  let st = document.createElementNS("http://www.w3.org/2000/svg", "style");
-  st.textContent =
-    "svg{background:transparent}text{font-family:Inter,Segoe UI,sans-serif}.label{font-size:12px;font-weight:700;fill:#17212b}.value,.centreLabel{font-size:11px;fill:#707986}.centreTotal{font-size:24px;font-weight:800;fill:#17212b;text-anchor:middle}.centreLabel{text-anchor:middle}.leader{fill:none;stroke:#aeb8c0;stroke-width:1}.dropPreview{stroke:#172b3f;stroke-width:2;stroke-dasharray:5 4;pointer-events:none}.slice{stroke:#fff}";
-  c.prepend(st);
-  return new XMLSerializer().serializeToString(c);
+  return ChartExport.frame("Chart").svg;
 }
 function base() {
   return ($("#diagramTitle").value || "donut chart").replace(

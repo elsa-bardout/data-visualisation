@@ -10,7 +10,9 @@ The table automatically grows an empty row and column as you type or paste. The 
 
 Samples demonstrate multiple periods, series, signed stacks, targets, annotations and bubble sizes. Values are fictional. The map combines all 20 [Camden wards](https://www.ons.gov.uk/explore-local-statistics/areas/E09000007-camden) with three [library postcode locations](https://www.camden.gov.uk/libraries-opening-times). Ward and pin rows are separate so each has its own value; the Council column disambiguates ward names.
 
-Charts support SVG, PNG, and standalone HTML exports. HTML snapshots retain period selection, colours, and tooltips. Map HTML includes resolved geographic data and local application code, but still needs online Leaflet resources and basemap tiles. Map SVG contains vector shapes and labels without basemap tiles; PNG includes the rendered basemap when its provider permits cross-origin capture.
+Charts support SVG, PNG, and standalone HTML exports. HTML snapshots retain the title, colour key, tooltips, hover emphasis and period slider. Map HTML is a presentation view without editing controls; it embeds resolved geographic data but still needs online Leaflet resources and basemap tiles. Map SVG keeps shapes and labels editable and embeds the basemap as a separate raster layer. PNG uses the same composition. Basemap inclusion needs loaded tiles whose provider permits cross-origin capture.
+
+The map sample uses the five Camden neighbourhoods, with explicitly fictional population and household figures for tooltip examples. Area and pin colours can be edited independently. Inside labels centre on areas, with pin names available on hover. Outside labels follow the map bounds as scale changes. The dark-map toggle inverts the basemap while retaining category colours.
 
 Map lookups send geographic fields to Postcodes.io or Esri. Ambiguous wards require a council hint or a ward code; unmatched locations are reported. Coordinates can be used without geocoding. All other data processing occurs in the browser. Third-party chart libraries and tiles require internet access.
 

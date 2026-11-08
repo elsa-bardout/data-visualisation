@@ -352,3 +352,23 @@ a:focus-visible,
     transition: none;
   }
 }
+
+.diagnostics:not(:empty) {
+  background: #fff1f2;
+  color: #a52738;
+  border: 1px solid #f4cbd1;
+  border-radius: 8px;
+  padding: 10px 14px;
+  line-height: 1.5;
+}
+.mode svg {
+  width: 25px;
+  height: 25px;
+  stroke-width: 1.45;
+}
+.mode:hover {
+  color: #172b3f;
+}
+.indicator {
+  border-radius: 12px;
+}

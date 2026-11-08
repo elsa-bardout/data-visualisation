@@ -437,3 +437,52 @@ body {
   background: none;
   padding: 0;
 }
+
+.insideLabel > div {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  text-align: center;
+}
+.insideLabel .main {
+  line-height: 1.2;
+}
+.dark-map {
+  background: #171c24;
+}
+.dark-map .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg);
+}
+.dark-map .mapLabel {
+  color: #f7f8fa;
+  text-shadow: 0 1px 3px #000;
+}
+.dark-map .mapLabel .sub {
+  color: #d8dee8;
+}
+.pinMarkerSvg {
+  width: 22px !important;
+  height: 28px !important;
+}
+.status.on {
+  background: #fff1f2;
+  color: #a52738;
+  border: 1px solid #f4cbd1;
+  max-width: calc(100% - 36px);
+  line-height: 1.4;
+}
+.dark-map .insideLabel {
+  color: #17212b;
+  text-shadow: 0 0 3px #fff;
+}
+.dark-map .insideLabel .sub {
+  color: #405062;
+}
+.legend span.swatch {
+  display: inline-block;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+}

@@ -9,7 +9,7 @@ let M = [[]],
   renderedItems = [],
   currentBounds = null,
   map = L.map("map", {
-    zoomControl: true,
+    zoomControl: false,
     dragging: true,
     scrollWheelZoom: false,
     doubleClickZoom: true,
@@ -25,6 +25,7 @@ let M = [[]],
   tile = null,
   mask = null,
   mapMode = "full",
+  darkMap = false,
   boundaryMode = "fill",
   pinStyle = "marker",
   labelMode = "none",
@@ -211,9 +212,11 @@ function parse() {
     colourField =
       I.colour >= 0
         ? I.colour
-        : I.value >= 0
-          ? I.value
-          : (numericFields[0] ?? categoryFields[0] ?? -1);
+        : I.category >= 0 && categoryFields.includes(I.category)
+          ? I.category
+          : I.value >= 0
+            ? I.value
+            : (numericFields[0] ?? categoryFields[0] ?? -1);
   categoryField = categoryFields.includes(colourField)
     ? colourField
     : (categoryFields[0] ?? -1);
@@ -373,7 +376,11 @@ function legend(items) {
   b.innerHTML = "";
   items.forEach((x) => {
     let l = document.createElement("label"),
-      i = document.createElement("button");
+      i = document.createElement(
+        document.documentElement.dataset.export === "readonly"
+          ? "span"
+          : "button",
+      );
     i.className = "swatch";
     i.style.background = x.c;
     i.onclick = (e) => openColour(e, x.key);
@@ -382,6 +389,7 @@ function legend(items) {
   });
 }
 function openColour(e, key) {
+  if (document.documentElement.dataset.export === "readonly") return;
   colourTarget = key;
   let v = colours[key],
     r = e.currentTarget.getBoundingClientRect();
@@ -392,6 +400,7 @@ function openColour(e, key) {
   $("#colourPop").classList.add("open");
 }
 function setMapMode() {
+  $("#map").classList.toggle("dark-map", darkMap);
   if (mask) {
     map.removeLayer(mask);
     mask = null;
@@ -404,7 +413,7 @@ function setMapMode() {
   } else if (!tile) {
     tile = L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-      { attribution: "Tiles © Esri", maxZoom: 19 },
+      { attribution: "Tiles © Esri", maxZoom: 19, crossOrigin: "anonymous" },
     ).addTo(map);
     tile.bringToBack();
   }
@@ -546,18 +555,56 @@ function visualCentre(feature) {
   return best ? L.latLng(best.p[1], best.p[0]) : null;
 }
 function insideLabels(items) {
-  let size = 10;
-  items.forEach((x) => {
-    let w = Math.max(48, Math.min(150, x.width - 8)),
-      m = L.marker(x.latlng, {
-        interactive: false,
-        icon: L.divIcon({
-          className: "mapLabel",
-          html: labelHtml(x.data, size),
-          iconSize: [w, 58],
-          iconAnchor: [w / 2, 29],
-        }),
-      }).addTo(map);
+  const occupied = [];
+  // Inside mode labels the shapes. Pins on top retain their names in tooltips;
+  // putting both names in the same small ward makes neither readable.
+  const visible = items.some((x) => x.kind === "area")
+    ? items.filter((x) => x.kind === "area")
+    : items;
+  visible.forEach((x) => {
+    const p = map.latLngToContainerPoint(x.latlng);
+    let w = 100;
+    if (x.feature) {
+      const ring = (
+        x.feature.geometry.type === "Polygon"
+          ? x.feature.geometry.coordinates
+          : x.feature.geometry.coordinates[0]
+      )[0].map((c) => map.latLngToContainerPoint([c[1], c[0]]));
+      const span =
+        Math.max(...ring.map((p) => p.x)) - Math.min(...ring.map((p) => p.x));
+      w = Math.max(48, Math.min(110, span * 0.7));
+    }
+    let anchor = [w / 2, 0],
+      pos = x.latlng;
+    if (x.kind === "point") {
+      const offsets = [
+        [0, -28],
+        [65, 0],
+        [-65, 0],
+        [0, 32],
+      ];
+      let chosen =
+        offsets.find(
+          ([dx, dy]) =>
+            !occupied.some(
+              (o) =>
+                Math.abs(o.x - p.x - dx) < (o.w + w) / 2 &&
+                Math.abs(o.y - p.y - dy) < 30,
+            ),
+        ) || offsets[0];
+      pos = map.containerPointToLatLng(
+        L.point(p.x + chosen[0], p.y + chosen[1]),
+      );
+    } else occupied.push({ x: p.x, y: p.y, w });
+    const m = L.marker(pos, {
+      interactive: false,
+      icon: L.divIcon({
+        className: "mapLabel insideLabel",
+        html: labelHtml(x.data, 11),
+        iconSize: [w, 0],
+        iconAnchor: anchor,
+      }),
+    }).addTo(map);
     labels.push(m);
   });
 }
@@ -595,7 +642,17 @@ function outsideLabels(items) {
       q.forEach((x) => (x.y += z));
     }
     q.forEach((x) => {
-      let lineX = x.side === "right" ? map.getSize().x - 255 : 255,
+      let edge = currentBounds?.isValid?.()
+          ? map.latLngToContainerPoint(
+              x.side === "right"
+                ? currentBounds.getNorthEast()
+                : currentBounds.getSouthWest(),
+            ).x
+          : x.p.x,
+        lineX =
+          x.side === "right"
+            ? Math.min(map.getSize().x - 180, edge + 32)
+            : Math.max(180, edge - 32),
         labelX = x.side === "right" ? lineX + 12 : lineX - 12,
         end = L.point(lineX, x.y),
         elbow = L.point(x.side === "right" ? x.p.x + 28 : x.p.x - 28, x.y),
@@ -610,7 +667,7 @@ function outsideLabels(items) {
             interactive: false,
           },
         ).addTo(map),
-        w = 190,
+        w = 160,
         m = L.marker(labelLL, {
           interactive: false,
           icon: L.divIcon({
@@ -989,6 +1046,7 @@ function renderAreaSet(area) {
           latlng: visualCentre(f) || z.getCenter(),
           data: d,
           width: Math.abs(se.x - nw.x),
+          feature: f,
           kind: "area",
         });
       });
@@ -1018,14 +1076,14 @@ function renderAreaSet(area) {
   return { items, bounds: layer.getBounds(), legend: lg };
 }
 function pinIcon(style, c, size) {
-  let s = style === "bubble" ? size * 1.65 : size;
+  let s = style === "diamond" ? size / Math.SQRT2 : size;
   if (style === "marker") {
-    let html = `<svg class="pinMarkerSvg" viewBox="0 0 28 36" aria-hidden="true"><path d="M14 1.5C6.7 1.5 1.5 6.8 1.5 14c0 9.1 12.5 20.4 12.5 20.4S26.5 23.1 26.5 14C26.5 6.8 21.3 1.5 14 1.5Z" fill="${c}" stroke="#fff" stroke-width="2.5"/><circle cx="14" cy="13.5" r="4" fill="#fff"/></svg>`;
+    let html = `<svg class="pinMarkerSvg" width="22" height="28" viewBox="0 0 28 36" aria-hidden="true"><path d="M14 1.5C6.7 1.5 1.5 6.8 1.5 14c0 9.1 12.5 20.4 12.5 20.4S26.5 23.1 26.5 14C26.5 6.8 21.3 1.5 14 1.5Z" fill="${c}" stroke="#fff" stroke-width="2.5"/><circle cx="14" cy="13.5" r="4" fill="#fff"/></svg>`;
     return L.divIcon({
       className: "pinDiv",
       html,
-      iconSize: [30, 38],
-      iconAnchor: [15, 36],
+      iconSize: [22, 28],
+      iconAnchor: [11, 26],
     });
   }
   let cls =
@@ -1058,8 +1116,8 @@ function renderPointSet(points) {
       1,
       ...coords.map((x) => num(x.r[p.I.value])).filter(Number.isFinite),
     ),
-    lowColour = getColour("gradientLow", "#EEF0FF"),
-    highColour = getColour("gradientHigh", "#5653FF"),
+    lowColour = getColour("pinGradientLow", "#EEF0FF"),
+    highColour = getColour("pinGradientHigh", "#5653FF"),
     categories = [
       ...new Set(coords.map((x) => clean(x.r[field]) || "Locations")),
     ];
@@ -1087,8 +1145,8 @@ function renderPointSet(points) {
       d = { name, value, category, meta: meta(p, r) },
       size =
         pinStyle === "bubble" && Number.isFinite(value)
-          ? Math.max(7, Math.sqrt(Math.max(0, value) / max) * 28)
-          : 12,
+          ? Math.max(12, Math.sqrt(Math.max(0, value) / max) * 28)
+          : 20,
       marker = L.marker([x.lat, x.lon], {
         title: name,
         alt: name,
@@ -1112,14 +1170,19 @@ function renderPointSet(points) {
       $("#tip").style.top = "16px";
     };
     element.onblur = hoverOff;
-    items.push({ latlng: L.latLng(x.lat, x.lon), data: d, width: 100 });
+    items.push({
+      latlng: L.latLng(x.lat, x.lon),
+      data: d,
+      width: 100,
+      kind: "point",
+    });
   });
   layers.push(group);
   const legend =
     mode === "gradient"
       ? [
-          { n: "Low · " + low, c: lowColour, key: "gradientLow" },
-          { n: "High · " + high, c: highColour, key: "gradientHigh" },
+          { n: "Low · " + low, c: lowColour, key: "pinGradientLow" },
+          { n: "High · " + high, c: highColour, key: "pinGradientHigh" },
         ]
       : mode === "category"
         ? categories.map((c) => ({
@@ -1166,53 +1229,49 @@ async function waitMap() {
   await new Promise((r) => setTimeout(r, 120));
 }
 async function exportCanvas() {
-  let old = { center: map.getCenter(), zoom: map.getZoom() },
-    toolbar = $(".toolbar"),
-    downloadWrap = $(".downloadWrap"),
-    note = $(".note"),
-    statusBox = $("#status"),
-    saved = [
-      toolbar.style.display,
-      downloadWrap.style.display,
-      note.style.display,
-      statusBox.className,
-    ];
+  await waitMap();
+  const svg = mapVectorSVG(await basemapImage());
+  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
   try {
-    toolbar.style.display = "none";
-    downloadWrap.style.display = "none";
-    note.style.display = "none";
-    statusBox.className = "status";
-    map.invalidateSize(false);
-    if (currentBounds?.isValid?.())
-      map.fitBounds(currentBounds, { padding: [42, 42], animate: false });
-    await waitMap();
-    return await html2canvas($(".card"), {
-      useCORS: true,
-      allowTaint: false,
-      backgroundColor: "#fff",
-      scale: 2,
-      logging: false,
-      foreignObjectRendering: false,
+    return await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = image.width * 2;
+        canvas.height = image.height * 2;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas);
+      };
+      image.onerror = () =>
+        reject(Error("The map image could not be prepared. Please try SVG."));
+      image.src = url;
     });
   } finally {
-    toolbar.style.display = saved[0];
-    downloadWrap.style.display = saved[1];
-    note.style.display = saved[2];
-    statusBox.className = saved[3];
-    map.invalidateSize(false);
-    map.setView(old.center, old.zoom, { animate: false });
-    await waitMap();
+    URL.revokeObjectURL(url);
   }
 }
 async function interactiveHtml() {
   const root = document.documentElement.cloneNode(true);
+  root.dataset.export = "readonly";
   root.querySelector("#map").innerHTML = "";
   root.querySelector("#map").className = "map";
   root.querySelector("#legend").innerHTML = "";
   root.querySelector("#tip").textContent = "";
   root.querySelector("#tip").style.opacity = 0;
+  root.querySelector("#status").textContent = "";
+  root.querySelector("#status").className = "status";
   root.querySelector("#title").setAttribute("value", $("#title").value);
   root.querySelector(".downloadWrap").style.display = "none";
+  root.querySelector(".toolbar").style.display = "none";
+  root.querySelector("#title").setAttribute("readonly", "");
+  root
+    .querySelectorAll(".sr-only,.title-editor::after")
+    .forEach((n) => n.remove());
+  const exportStyle = document.createElement("style");
+  exportStyle.textContent =
+    ".toolbar,.downloadWrap,.colourPop,.title-editor::after{display:none!important}.title{border:0!important;outline:none!important;pointer-events:none}.legend .swatch{pointer-events:none;cursor:default}";
+  root.querySelector("head").append(exportStyle);
   root.querySelectorAll(".chart-summary").forEach((n) => n.remove());
   for (const link of [...root.querySelectorAll('link[rel="stylesheet"]')]) {
     if (
@@ -1263,7 +1322,9 @@ async function download(type) {
       );
     else if (type === "svg")
       dl(
-        new Blob([mapVectorSVG()], { type: "image/svg+xml" }),
+        new Blob([mapVectorSVG(await basemapImage())], {
+          type: "image/svg+xml",
+        }),
         fileBase() + ".svg",
       );
     else {
@@ -1284,7 +1345,7 @@ async function download(type) {
     status("Download failed: " + e.message);
   }
 }
-function mapVectorSVG() {
+function mapVectorSVG(basemap = "") {
   const bounds = document.querySelector("#map").getBoundingClientRect(),
     W = bounds.width,
     H = bounds.height,
@@ -1293,19 +1354,53 @@ function mapVectorSVG() {
     '<svg xmlns="http://www.w3.org/2000/svg" width="' +
       W +
       '" height="' +
-      (H + 90) +
+      (H + 125) +
       '" viewBox="0 0 ' +
       W +
       " " +
-      (H + 90) +
+      (H + 125) +
       '"><rect width="100%" height="100%" fill="white"/><text x="20" y="28" font-family="system-ui" font-size="20" font-weight="700">' +
       esc($("#title").value) +
       '</text><defs><clipPath id="mapclip"><rect width="' +
       W +
       '" height="' +
       H +
-      '"/></clipPath></defs><g transform="translate(0,45)" clip-path="url(#mapclip)">',
+      '"/></clipPath></defs><g transform="translate(0,80)" clip-path="url(#mapclip)">',
   );
+  let keyX = 20;
+  const key = [];
+  document.querySelectorAll("#legend label").forEach((n) => {
+    const colour = getComputedStyle(n.querySelector(".swatch")).backgroundColor;
+    const name = n.textContent.trim();
+    key.push(
+      '<rect x="' +
+        keyX +
+        '" y="45" width="12" height="12" rx="3" fill="' +
+        colour +
+        '"/><text x="' +
+        (keyX + 19) +
+        '" y="55" font-family="Inter,Segoe UI,sans-serif" font-size="11" fill="#59636e">' +
+        esc(name) +
+        "</text>",
+    );
+    keyX += name.length * 6 + 42;
+  });
+  parts.push(
+    "</g>" +
+      key.join("") +
+      '<g transform="translate(0,80)" clip-path="url(#mapclip)">',
+  );
+  if (basemap)
+    parts.push(
+      '<g id="basemap"><image width="' +
+        W +
+        '" height="' +
+        H +
+        '" href="' +
+        basemap +
+        '"/></g>',
+    );
+  parts.push('<g id="features">');
   document
     .querySelectorAll(".leaflet-overlay-pane svg path")
     .forEach((node) => {
@@ -1378,27 +1473,61 @@ function mapVectorSVG() {
         );
     }
   });
+  parts.push('</g><g id="labels">');
   document.querySelectorAll(".mapLabel .main,.mapLabel .sub").forEach((n) => {
-    const r = n.getBoundingClientRect(),
-      style = getComputedStyle(n);
-    parts.push(
-      '<text x="' +
-        (r.left - bounds.left) +
-        '" y="' +
-        (r.top - bounds.top + parseFloat(style.fontSize)) +
-        '" font-family="system-ui" font-size="' +
-        style.fontSize +
-        '" fill="' +
-        style.color +
-        '">' +
-        esc(n.textContent) +
-        "</text>",
+    const style = getComputedStyle(n),
+      box = n.getBoundingClientRect(),
+      align = style.textAlign;
+    const text = n.firstChild;
+    if (!text || text.nodeType !== 3) return;
+    const lines = [];
+    for (let i = 0; i < text.length; i++) {
+      const range = document.createRange();
+      range.setStart(text, i);
+      range.setEnd(text, i + 1);
+      const rect = range.getBoundingClientRect();
+      let line = lines.find((l) => Math.abs(l.y - rect.top) < 2);
+      if (!line) {
+        line = { y: rect.top, text: "" };
+        lines.push(line);
+      }
+      line.text += text.data[i];
+    }
+    const anchor =
+        align === "right" ? "end" : align === "center" ? "middle" : "start",
+      x =
+        align === "right"
+          ? box.right
+          : align === "center"
+            ? box.left + box.width / 2
+            : box.left;
+    lines.forEach((line) =>
+      parts.push(
+        '<text x="' +
+          (x - bounds.left) +
+          '" y="' +
+          (line.y - bounds.top + parseFloat(style.fontSize) * 0.85) +
+          '" text-anchor="' +
+          anchor +
+          '" font-family="' +
+          esc(style.fontFamily) +
+          '" font-size="' +
+          style.fontSize +
+          '" font-weight="' +
+          style.fontWeight +
+          '" fill="' +
+          style.color +
+          '">' +
+          esc(line.text.trim()) +
+          "</text>",
+      ),
     );
   });
+  parts.push("</g>");
   parts.push(
     '</g><text x="16" y="' +
-      (H + 72) +
-      '" font-family="system-ui" font-size="11">Vector shapes and labels. Basemap omitted. Geographic data: Esri / ONS / Postcodes.io.</text></svg>',
+      (H + 108) +
+      '" font-family="system-ui" font-size="11">Geographic data: Esri / ONS / Postcodes.io.</text></svg>',
   );
   return parts.join("");
 }
@@ -1576,6 +1705,7 @@ async function fetchJSONResponse(url, options) {
   return { json: async () => structuredClone(data) };
 }
 function syncControls() {
+  $("#themeBtn").textContent = darkMap ? "Light map" : "Dark map";
   $("#mapModeBtn").textContent = {
     none: "No map",
     partial: "Partial map",
@@ -1599,6 +1729,11 @@ function syncControls() {
   $("#valuesBtn").classList.toggle("active", showValues);
   $("#detailsBtn").classList.toggle("active", showDetails);
 }
+$("#themeBtn").onclick = () => {
+  darkMap = !darkMap;
+  setMapMode();
+  syncControls();
+};
 syncControls();
 new ResizeObserver(() => {
   map.invalidateSize(false);
@@ -1611,6 +1746,7 @@ map.on("moveend", () => {
 window.chartSettings = {
   get() {
     return structuredClone({
+      darkMap: darkMap,
       mapMode: mapMode,
       pinStyle: pinStyle,
       labelMode: labelMode,
@@ -1624,6 +1760,7 @@ window.chartSettings = {
   },
   set(s) {
     if (!s || typeof s !== "object") return;
+    if (typeof s.darkMap === "boolean") darkMap = s.darkMap;
     if (
       typeof s.mapMode === typeof mapMode &&
       (typeof s.mapMode !== "number" || Number.isFinite(s.mapMode))
@@ -1709,3 +1846,42 @@ window.chartBridge = {
     chartSettings.reset();
   },
 };
+
+async function basemapImage() {
+  if (mapMode === "none") return "";
+  const element = $("#map"),
+    bounds = element.getBoundingClientRect(),
+    canvas = document.createElement("canvas");
+  canvas.width = Math.round(bounds.width);
+  canvas.height = Math.round(bounds.height);
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = darkMap ? "#171c24" : "#fff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.globalAlpha = +$("#mapOpacity").value / 100;
+  if (darkMap) ctx.filter = "invert(1) hue-rotate(180deg)";
+  const tiles = [...element.querySelectorAll(".leaflet-tile-pane img")];
+  await Promise.all(
+    tiles
+      .filter((img) => !img.complete)
+      .map(
+        (img) =>
+          new Promise((resolve) => {
+            img.addEventListener("load", resolve, { once: true });
+            img.addEventListener("error", resolve, { once: true });
+            setTimeout(resolve, 4000);
+          }),
+      ),
+  );
+  for (const img of tiles) {
+    if (!img.naturalWidth) continue;
+    const r = img.getBoundingClientRect();
+    ctx.drawImage(
+      img,
+      r.left - bounds.left,
+      r.top - bounds.top,
+      r.width,
+      r.height,
+    );
+  }
+  return canvas.toDataURL("image/png");
+}

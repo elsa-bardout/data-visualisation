@@ -81,7 +81,7 @@ test("switching chart type preserves source cells and automatic interpretation",
     h.dom.window.close();
   }
 });
-test("invalid and nonpositive donut values are reported with row references", () => {
+test("nonpositive donut values produce concise actionable advice", () => {
   const h = app();
   try {
     h.doc.querySelector("#tab-donut").click();
@@ -93,7 +93,7 @@ test("invalid and nonpositive donut values are reported with row references", ()
     h.doc.querySelector("#tab-donut").click();
     assert.match(
       h.doc.querySelector("#diagnostics").textContent,
-      /nonpositive.*row 1/,
+      /needs positive amounts.*bar or line/,
     );
   } finally {
     h.dom.window.close();

@@ -449,15 +449,8 @@ function colour(e, n) {
     f(c.value);
   };
 }
-function svgText(hits = false) {
-  let c = $("#svg").cloneNode(true);
-  if (!hits) c.querySelectorAll(".pointHit").forEach((x) => x.remove());
-  c.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-  let st = document.createElementNS("http://www.w3.org/2000/svg", "style");
-  st.textContent =
-    "svg{background:transparent}text{font-family:Inter,Segoe UI,sans-serif}.axis text{font-size:11px;fill:#59636e}.axis path,.axis line{stroke:#d9e0e5}.gridline line{stroke:#edf1f4}.gridline path{display:none}.point{stroke:#fff;stroke-width:1.5}.pointHit{fill:transparent}.trend{fill:none;stroke-width:2;stroke-dasharray:7 5}.axisTitle{font-size:11px;font-weight:700;fill:#4d5965}";
-  c.prepend(st);
-  return new XMLSerializer().serializeToString(c);
+function svgText() {
+  return ChartExport.frame("Chart").svg;
 }
 function dl(b, n) {
   let u = URL.createObjectURL(b),

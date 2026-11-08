@@ -462,9 +462,18 @@ function draw(target, D, interactive = false) {
       .attr("text-anchor", "middle")
       .attr("fill", (d) => C[d.series])
       .text((d) => fmt(d.value));
-  let targets = groups
-    .map(([s, v]) => ({ s, v: v.map((d) => d.target).filter(Number.isFinite) }))
-    .filter((d) => d.v.length);
+  let targets = targetGroups(groups);
+  const sorted = targets
+    .slice()
+    .sort((a, b) => y(d3.mean(a.v)) - y(d3.mean(b.v)));
+  sorted.forEach(
+    (d, i) =>
+      (d.labelY = Math.max(
+        12,
+        y(d3.mean(d.v)) - 7,
+        i ? sorted[i - 1].labelY + 15 : 0,
+      )),
+  );
   g.selectAll(".targetLine")
     .data(targets)
     .join("line")
@@ -480,10 +489,12 @@ function draw(target, D, interactive = false) {
     .join("text")
     .attr("class", "annotation")
     .attr("x", iw - 2)
-    .attr("y", (d) => y(d3.mean(d.v)) - 5)
+    .attr("y", (d) => d.labelY)
     .attr("text-anchor", "end")
     .attr("fill", (d) => TC[d.s])
-    .text((d) => `${d.s} target ${fmt(d3.mean(d.v))}`);
+    .text(
+      (d) => `${d.shared ? "Target" : d.s + " target"} ${fmt(d3.mean(d.v))}`,
+    );
 }
 function tooltip(d) {
   return `<b>${d.series}</b><br>${xLabel(d)}: ${fmt(d.value)}${Number.isFinite(d.target) ? `<br>Target: ${fmt(d.target)}` : ""}${d.note ? `<br>${d.note}` : ""}`;
@@ -506,10 +517,25 @@ function render() {
   legend();
   $("#share").disabled = false;
 }
+function targetGroups(groups) {
+  const out = [];
+  for (const [s, points] of groups) {
+    const v = points.map((d) => d.target).filter(Number.isFinite);
+    if (!v.length) continue;
+    const value = d3.mean(v);
+    let same = out.find((d) => Math.abs(d3.mean(d.v) - value) < 1e-9);
+    if (same) {
+      same.shared = true;
+      same.series.push(s);
+    } else out.push({ s, v, series: [s], shared: false });
+  }
+  return out;
+}
 function legend() {
   let names = [...new Set(model.points.map((d) => d.series))],
     b = $("#legend");
   b.innerHTML = "";
+  const targets = targetGroups(d3.groups(model.points, (d) => d.series));
   names.forEach((n) => {
     let l = document.createElement("label"),
       i = document.createElement("button");
@@ -526,7 +552,8 @@ function legend() {
     };
     l.append(i, document.createTextNode(n));
     b.append(l);
-    if (model.points.some((d) => d.series === n && Number.isFinite(d.target))) {
+    const target = targets.find((d) => d.s === n);
+    if (target) {
       let tl = document.createElement("label"),
         ti = document.createElement("button");
       tl.className = "targetItem";
@@ -535,8 +562,18 @@ function legend() {
       ti.onclick = (e) => {
         e.stopPropagation();
         openColour(e, n, TC);
+        const input = $("#hex");
+        const previous = input.oninput;
+        input.oninput = () => {
+          previous?.();
+          target.series.forEach((name) => (TC[name] = TC[n]));
+          render();
+        };
       };
-      tl.append(ti, document.createTextNode(n + " target"));
+      tl.append(
+        ti,
+        document.createTextNode(target.shared ? "Target" : n + " target"),
+      );
       b.append(tl);
     }
   });
@@ -564,14 +601,7 @@ function openColour(e, n, store) {
   };
 }
 function svgText() {
-  let c = $("#svg").cloneNode(true);
-  c.querySelectorAll(".pointHit").forEach((x) => x.remove());
-  c.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-  let st = document.createElementNS("http://www.w3.org/2000/svg", "style");
-  st.textContent =
-    "text{font-family:Inter,Segoe UI,sans-serif}.axis text{font-size:11px;fill:#59636e}.axis path,.axis line{stroke:#d9e0e5}.gridline line{stroke:#edf1f4}.gridline path{display:none}.seriesLine{fill:none;stroke-linejoin:round;stroke-linecap:round}.area{fill-opacity:.16;stroke:none}.point{stroke:#fff}.valueLabel{font-size:10px;font-weight:650}.annotation{font-size:10px}";
-  c.prepend(st);
-  return new XMLSerializer().serializeToString(c);
+  return ChartExport.frame("Chart").svg;
 }
 function base() {
   return ($("#diagramTitle").value || "line chart").replace(

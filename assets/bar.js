@@ -452,13 +452,7 @@ function openColour(e, n) {
   };
 }
 function svgText() {
-  let c = $("#svg").cloneNode(true);
-  c.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-  let st = document.createElementNS("http://www.w3.org/2000/svg", "style");
-  st.textContent =
-    "text{font-family:Inter,Segoe UI,sans-serif}.axis text{font-size:11px;fill:#59636e}.axis.categoryAxis text{font-weight:700;fill:#17212b}.axis path,.axis line{stroke:#d9e0e5}.gridline line{stroke:#edf1f4}.gridline path{display:none}.valueLabel{font-size:10px;fill:#59636e;text-anchor:middle}.categoryAxis text{font-weight:700;fill:#17212b}.stackValue{font-size:10px;font-weight:700;text-anchor:middle}";
-  c.prepend(st);
-  return new XMLSerializer().serializeToString(c);
+  return ChartExport.frame("Chart").svg;
 }
 function base() {
   return (
@@ -537,6 +531,8 @@ $("#valuesBtn").onclick = () => {
   $("#valuesBtn").classList.toggle("active", showValues);
   render();
 };
+$("#reorder").title =
+  "Change the order automatically, or drag a bar to move it manually.";
 $("#reorder").onclick = () => {
   manualOrder = [];
   orderMode = (orderMode + 1) % 3;
@@ -736,21 +732,52 @@ function drawBars(target, D, horizontal) {
       )
       .attr("fill", (d) => contrastText(d.colour))
       .text((d) => d.data.value.toLocaleString());
-  rects.call(
-    d3.drag().on("end", (e, d) => {
-      const pos = horizontal ? e.y : e.x,
-        to = Math.max(
-          0,
-          Math.min(cats.length - 1, Math.floor(pos / band.step())),
-        ),
-        from = cats.indexOf(d.data.category);
-      if (from !== to) {
-        manualOrder = cats.slice();
-        manualOrder.splice(from, 1);
-        manualOrder.splice(to, 0, d.data.category);
-        render();
-      }
-    }),
+  const preview = g
+    .append("line")
+    .attr("class", "dragPreview")
+    .attr("stroke", "#172b3f")
+    .attr("stroke-width", 2)
+    .attr("stroke-dasharray", "5 4")
+    .style("display", "none")
+    .style("pointer-events", "none");
+  rects.style("cursor", "grab").call(
+    d3
+      .drag()
+      .on("start", () => tip.style("opacity", 0))
+      .on("drag", (e, d) => {
+        const pos = horizontal ? e.y : e.x,
+          to = Math.max(
+            0,
+            Math.min(cats.length - 1, Math.floor(pos / band.step())),
+          ),
+          from = cats.indexOf(d.data.category);
+        const at = band(cats[to]) + (to > from ? band.bandwidth() : 0);
+        preview
+          .style("display", null)
+          .attr("x1", horizontal ? 0 : at)
+          .attr("x2", horizontal ? iw : at)
+          .attr("y1", horizontal ? at : 0)
+          .attr("y2", horizontal ? at : ih);
+        rects.attr("opacity", (x) =>
+          x.data.category === d.data.category?.toString() ? 0.6 : 1,
+        );
+      })
+      .on("end", (e, d) => {
+        preview.style("display", "none");
+        rects.attr("opacity", 1);
+        const pos = horizontal ? e.y : e.x,
+          to = Math.max(
+            0,
+            Math.min(cats.length - 1, Math.floor(pos / band.step())),
+          ),
+          from = cats.indexOf(d.data.category);
+        if (from !== to) {
+          manualOrder = cats.slice();
+          manualOrder.splice(from, 1);
+          manualOrder.splice(to, 0, d.data.category);
+          render();
+        }
+      }),
   );
 }
 

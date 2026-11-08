@@ -254,8 +254,27 @@
           ].includes(norm(x.v)) && !(mode === "line" && norm(x.v) === "X"),
       )
       .map((x) => x.i);
-    if (mode === "donut")
+    if (mode === "donut") {
+      if (
+        h.some((v) =>
+          ["SERIES", "SOURCE", "TARGET", "PERIOD"].includes(norm(v)),
+        )
+      ) {
+        $("#diagnostics").textContent =
+          "For a donut, put one category per row and a positive amount in the next column. To compare periods, give each period its own amount column. Try the donut sample to see the layout.";
+        return;
+      }
       indices = h.map((_, i) => i).filter((i) => i > 0 && h[i]?.trim());
+    }
+    if (
+      mode === "sankey" &&
+      h.some((v) => norm(v) === "SERIES") &&
+      !h.some((v) => norm(v) === "SOURCE")
+    ) {
+      $("#diagnostics").textContent =
+        "This looks like a bar-chart table. For flows, add Source and Target columns to say where each amount comes from and goes to. Try the flow sample for an example.";
+      return;
+    }
     if (!indices.length && ["bar", "line"].includes(mode))
       indices = h
         .map((_, i) => i)
@@ -280,13 +299,13 @@
     });
     if (invalid.length)
       issues.push(
-        `${invalid.length} missing or invalid numeric cell(s): ${invalid.slice(0, 6).join("; ")}${invalid.length > 6 ? "; …" : ""}. These values cannot be plotted.`,
+        "Some amounts are blank or are not numbers. Fill in the numeric columns with numbers such as 120 or 12.5; leave out rows you do not want to plot.",
       );
     if (nonpositive.length)
       issues.push(
-        `${nonpositive.length} nonpositive value(s) excluded from this chart: ${nonpositive.slice(0, 6).join("; ")}. Use a bar or line chart to include signed values.`,
+        "This chart needs positive amounts. Remove zero or negative values, or use a bar or line chart to show gains and losses.",
       );
-    $("#diagnostics").textContent = issues.join("\n");
+    $("#diagnostics").textContent = issues.join(" ");
   }
   function push() {
     const table = copy(data);
@@ -313,6 +332,17 @@
       frames[n].classList.toggle("active", n === mode);
       frames[n].hidden = n !== mode;
     }
+    document.querySelector(".sharedHint").textContent = {
+      sankey:
+        "Use Source, Target and Value to show flows between steps. Add Period for a time slider, and extra columns for hover details.",
+      donut:
+        "Put names in the first column and positive amounts beside them. Extra amount columns become periods. Drag labels to change the order.",
+      bar: "Use Category and Value; add Series for stacked bars and Period for a time slider. Negative values work too. Drag bars to reorder them.",
+      line: "Use Date or X, Value and optionally Series. Add Target for a reference line and Note for an annotation. Extra details appear on hover.",
+      scatter:
+        "Use X and Y for positions, Size for bubbles and Series for groups. Add Label, Period or extra hover details as needed.",
+      map: "Postcodes and coordinates make pins; ward or council names make areas. Add Council to identify wards, Category for groups, and extra columns for hover details.",
+    }[mode];
     updateTitle();
     moveIndicator();
 
@@ -404,6 +434,8 @@
   $("#sample").onclick = () => {
     checkpoint();
     data = copy(examples[mode]);
+    frames[mode].contentWindow?.chartBridge?.resetAll();
+    delete states[mode];
 
     selection = null;
     renderGrid();

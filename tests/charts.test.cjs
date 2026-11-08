@@ -473,3 +473,107 @@ test("mixed ward and postcode tables resolve both layers and report unmatched pi
   assert.equal(fallback.coords.length, 1);
   assert.ok(fallback.missing.includes("Camden Town"));
 });
+
+test("shared line targets draw once and distinct targets have separated labels", () => {
+  const h = harness("line");
+  try {
+    h.w.chartBridge.setData(samples.line);
+    assert.equal(h.w.document.querySelectorAll(".targetItem").length, 1);
+    assert.equal(h.w.document.querySelectorAll(".annotation").length, 1);
+    assert.equal(
+      [...h.w.document.querySelectorAll(".annotation")].filter(
+        (n) => n.textContent === "Target 130",
+      ).length,
+      1,
+    );
+    h.w.chartBridge.setData([
+      ["X", "Series", "Value", "Target"],
+      ["1", "A", "10", "30"],
+      ["2", "A", "20", "30"],
+      ["1", "B", "14", "31"],
+      ["2", "B", "19", "31"],
+    ]);
+    const labels = [...h.w.document.querySelectorAll(".annotation")].filter(
+      (n) => n.textContent.includes("target"),
+    );
+    assert.equal(labels.length, 2);
+    assert.ok(
+      Math.abs(+labels[0].getAttribute("y") - +labels[1].getAttribute("y")) >=
+        14.99,
+    );
+  } finally {
+    h.dom.window.close();
+  }
+});
+
+test("flow periods change geometry and detangle never increases weighted crossings", () => {
+  const h = harness("sankey");
+  try {
+    h.w.chartBridge.setData(samples.sankey);
+    const before = h.w.document.querySelector(".link").getAttribute("d");
+    const slider = h.w.document.querySelector("#period");
+    slider.value = "2";
+    slider.dispatchEvent(new h.w.Event("input"));
+    assert.notEqual(
+      h.w.document.querySelector(".link").getAttribute("d"),
+      before,
+    );
+    assert.equal(slider.max, "2");
+    const score = vm.runInContext("crossingScore(nodeOrder)", h.context);
+    h.w.document.querySelector("#det").click();
+    assert.ok(vm.runInContext("crossingScore(nodeOrder)", h.context) <= score);
+    const second = vm.runInContext("crossingScore(nodeOrder)", h.context);
+    h.w.document.querySelector("#det").click();
+    assert.ok(vm.runInContext("crossingScore(nodeOrder)", h.context) <= second);
+  } finally {
+    h.dom.window.close();
+  }
+});
+
+test("donut HTML keeps a coloured key, live period slider, compact tooltip and hover emphasis", async () => {
+  const h = harness("donut");
+  let exported;
+  try {
+    h.w.chartBridge.setData(samples.donut);
+    let blob;
+    h.w.Blob = Blob;
+    h.w.URL.createObjectURL = (b) => ((blob = b), "blob:test");
+    h.w.URL.revokeObjectURL = () => {};
+    h.w.HTMLAnchorElement.prototype.click = function () {};
+    vm.runInContext("interactive()", h.context);
+    exported = new JSDOM(await blob.text(), { runScripts: "dangerously" });
+    const doc = exported.window.document,
+      slider = doc.querySelector("#period");
+    assert.equal(slider.type, "range");
+    assert.equal(doc.querySelectorAll(".legend i").length, 8);
+    slider.value = "2";
+    slider.dispatchEvent(new exported.window.Event("input"));
+    assert.match(doc.querySelector("h1").textContent, /2026/);
+    const slice = doc.querySelector(".slice");
+    slice.dispatchEvent(
+      new exported.window.MouseEvent("mouseenter", {
+        clientX: 100,
+        clientY: 100,
+      }),
+    );
+    assert.equal(doc.querySelector(".tip").style.opacity, "1");
+    assert.equal(doc.querySelectorAll(".slice")[1].style.opacity, "0.28");
+    assert.match(doc.querySelector("style").textContent, /bottom:auto/);
+  } finally {
+    h.dom.window.close();
+    exported?.window.close();
+  }
+});
+
+test("Camden samples use the reference neighbourhoods and add clearly fictional tooltip details", () => {
+  const rows = samples.map.slice(1),
+    find = (ward) => rows.find((r) => r[0] === ward);
+  assert.equal(find("Belsize")[5], "North");
+  assert.equal(find("Haverstock")[5], "East");
+  assert.equal(find("St Pancras & Somers Town")[5], "Central");
+  assert.equal(find("King's Cross")[5], "South");
+  assert.equal(find("Kilburn")[5], "West");
+  assert.equal(new Set(rows.filter((r) => r[0]).map((r) => r[5])).size, 5);
+  assert.match(samples.map[0][6], /illustrative/);
+  assert.ok(+find("Belsize")[6] > 0);
+});

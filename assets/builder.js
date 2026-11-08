@@ -3,6 +3,13 @@
   const mode = location.pathname.split("/").pop().replace(".html", "");
   const bridge = window.chartBridge;
   if (!bridge) return;
+  const titleInput = document.querySelector("#diagramTitle,#title");
+  if (titleInput && !titleInput.closest(".title-editor")) {
+    const wrap = document.createElement("div");
+    wrap.className = "title-editor";
+    titleInput.replaceWith(wrap);
+    wrap.append(titleInput);
+  }
   const initial = window.chartSettings?.get();
   const controls = () =>
     Object.fromEntries(
