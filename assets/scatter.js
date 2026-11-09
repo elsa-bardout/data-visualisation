@@ -220,16 +220,30 @@ function draw(target, D) {
     .selectAll("*")
     .remove();
   let g = target.append("g").attr("transform", `translate(${m.left},${m.top})`);
+  const ticks = (scale, id) => {
+    const step = +$(id).value,
+      [lo, hi] = scale.domain();
+    if (!(step > 0) || (hi - lo) / step > 200) return null;
+    return d3
+      .range(Math.ceil(lo / step), Math.floor(hi / step) + 1)
+      .map((n) => +(n * step).toPrecision(12));
+  };
+  const xt = ticks(x, "#xGrid"),
+    yt = ticks(y, "#yGrid");
   g.append("g")
     .attr("class", "gridline")
-    .call(d3.axisLeft(y).tickSize(-iw).tickFormat(""));
+    .attr("transform", `translate(0,${ih})`)
+    .call(d3.axisBottom(x).tickValues(xt).tickSize(-ih).tickFormat(""));
+  g.append("g")
+    .attr("class", "gridline")
+    .call(d3.axisLeft(y).tickValues(yt).tickSize(-iw).tickFormat(""));
   g.append("g")
     .attr("class", "axis")
-    .call(d3.axisLeft(y).tickFormat(d3.format("~s")));
+    .call(d3.axisLeft(y).tickValues(yt).tickFormat(d3.format("~s")));
   g.append("g")
     .attr("class", "axis")
     .attr("transform", `translate(0,${ih})`)
-    .call(d3.axisBottom(x).tickFormat(d3.format("~s")));
+    .call(d3.axisBottom(x).tickValues(xt).tickFormat(d3.format("~s")));
   g.append("text")
     .attr("class", "axisTitle")
     .attr("x", iw / 2)
@@ -498,7 +512,9 @@ function html() {
   }
   ChartExport.download(frames, old);
 }
-["w", "h", "ps", "op", "bs"].forEach((x) => ($("#" + x).oninput = render));
+["w", "h", "ps", "op", "bs", "xGrid", "yGrid"].forEach(
+  (x) => ($("#" + x).oninput = render),
+);
 $("#period").oninput = (e) => {
   active = +e.target.value;
   model = all.filter((d) => d.period === periods[active]);

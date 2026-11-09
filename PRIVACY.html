@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>How your data is handled</title>
+    <style>
+      body {
+        font: 16px/1.6 system-ui;
+        color: #17212b;
+        background: #f7f8fa;
+        margin: 0;
+        padding: 32px;
+      }
+      main {
+        max-width: 720px;
+        margin: auto;
+        background: white;
+        padding: 32px;
+        border-radius: 16px;
+      }
+      h1 {
+        font-size: 24px;
+      }
+      h2 {
+        font-size: 18px;
+        margin-top: 28px;
+      }
+      a {
+        color: #4946dc;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>How your data is handled</h1>
+      <p>
+        The chart builder processes your table in your browser. This site does
+        not upload the full table, automatically save it, or use analytics. Data
+        and Undo history are held in the current tab's memory and are cleared
+        when you reload or close it.
+      </p>
+      <h2>Maps use external services</h2>
+      <p>Opening a map can make requests to external providers:</p>
+      <ul>
+        <li>Postcodes are sent to Postcodes.io to find their coordinates.</li>
+        <li>
+          Addresses and place names, with any council or country context, are
+          sent to Esri for location matching. UK ward/council names or codes are
+          sent to the ONS boundary service hosted by Esri.
+        </li>
+        <li>
+          Background map tiles are requested from Esri. Those requests reveal
+          the geographic area being viewed.
+        </li>
+      </ul>
+      <p>
+        Other table columns, such as amounts and notes, are not included in
+        those lookup requests. Country boundaries are bundled with this site. We
+        cannot promise that external providers do not log or retain requests.
+        Avoid entering confidential addresses or other sensitive locations if
+        you do not want to send them to those providers.
+      </p>
+      <h2>Downloads and hosting</h2>
+      <p>
+        Exports are created in your browser and saved only when you choose
+        Download. HTML exports contain chart data and settings; map HTML exports
+        also contain the source table and resolved locations. Anyone you share
+        an export with can inspect its contents. Interactive map exports still
+        request background tiles.
+      </p>
+      <p>
+        The site is hosted on GitHub Pages. As with ordinary websites, hosting
+        and map providers receive connection information such as your IP
+        address. The chart libraries are served with the site, without
+        third-party script requests. There is no account, database,
+        local-storage autosave or tracking cookie added by this application.
+      </p>
+      <p>
+        This describes the application's behaviour; it is not a promise about
+        your browser, extensions, downloaded files, network logs or external
+        providers' retention policies.
+      </p>
+      <p><a href="index.html">Back to the chart builder</a></p>
+    </main>
+  </body>
+</html>

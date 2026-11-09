@@ -550,7 +550,7 @@ $("#reset").onclick = () => {
   orderMode = 0;
   manualOrder = [];
   $("#reorder").textContent = "Order: ↓ value";
-  $("#diagramTitle").value = "Enter title here";
+  $("#diagramTitle").value = "";
   grid();
   clear();
   clearStatus();

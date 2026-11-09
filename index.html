@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="referrer" content="no-referrer" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
@@ -11,6 +12,7 @@
     <link rel="stylesheet" href="assets/app.css" />
     <script defer="" src="assets/shared.js"></script>
     <script defer="" src="assets/samples.js"></script>
+    <script defer="" src="assets/sample-sets.js"></script>
     <script defer="" src="assets/app.js"></script>
   </head>
   <body>
@@ -147,7 +149,7 @@
             <button
               id="sample"
               type="button"
-              title="Load demonstration data (fictional values)"
+              title="Cycle through sourced sample datasets"
             >
               Try sample data</button
             ><button
@@ -181,6 +183,13 @@
           is unsuitable, the selected chart will explain what it needs.
         </div>
         <div id="diagnostics" class="diagnostics" role="status"></div>
+        <p class="privacyNote">
+          Your table stays in this tab and is not saved by this site. Maps send
+          location fields to external lookup services.
+          <a href="PRIVACY.html" target="_blank" rel="noopener"
+            >Privacy details</a
+          >
+        </p>
         <div id="notice" class="sr-only" role="status" aria-live="polite"></div>
       </section>
       <section class="stage" aria-label="Chart preview">

@@ -59,9 +59,10 @@ function periodName(v) {
     .trim()
     .replace(/_/g, " ");
 }
+let donutRows = [];
 function getPeriod(j) {
   let a = new Map();
-  M.slice(1).forEach((r) => {
+  donutRows.slice(1).forEach((r) => {
     let name = String(r[0] || "").trim(),
       value = num(r[j]);
     if (name && name.toUpperCase() !== "TOTAL" && value > 0)
@@ -75,6 +76,50 @@ function build() {
   let u = M.filter((r) => r.some((x) => String(x).trim()));
   if (u.length < 2) return clear();
   let h = u[0];
+  const norm = (v) =>
+    String(v || "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
+  const vi = h.findIndex((v) =>
+    ["VALUE", "AMOUNT", "COUNT", "TOTAL"].includes(norm(v)),
+  );
+  const pi = h.findIndex((v) =>
+    ["PERIOD", "YEAR", "DATE", "TIME"].includes(norm(v)),
+  );
+  const ci = h.findIndex((v) =>
+    ["CATEGORY", "NAME", "LABEL", "ITEM"].includes(norm(v)),
+  );
+  if (vi >= 0 && pi >= 0 && ci >= 0) {
+    const periods = [...new Set(u.slice(1).map((r) => String(r[pi])))];
+    const categories = [...new Set(u.slice(1).map((r) => String(r[ci])))];
+    u = [
+      ["Category", ...periods],
+      ...categories.map((c) => [
+        c,
+        ...periods.map((p) =>
+          u
+            .slice(1)
+            .filter((r) => String(r[ci]) === c && String(r[pi]) === p)
+            .reduce(
+              (sum, r) => sum + (Number.isFinite(num(r[vi])) ? num(r[vi]) : 0),
+              0,
+            ),
+        ),
+      ]),
+    ];
+  } else if (pi === 0 && vi < 0) {
+    const cols = h
+      .map((v, i) => i)
+      .filter(
+        (i) => i > 0 && u.slice(1).some((r) => Number.isFinite(num(r[i]))),
+      );
+    u = [
+      ["Category", ...u.slice(1).map((r) => r[0])],
+      ...cols.map((i) => [h[i], ...u.slice(1).map((r) => r[i])]),
+    ];
+  }
+  donutRows = u;
+  h = u[0];
   periodCols = h
     .map((x, j) => ({ j, label: String(x || "").trim() }))
     .filter(
@@ -92,9 +137,7 @@ function build() {
   $("#period").max = periodCols.length - 1;
   $("#period").value = activePeriod;
   $("#periodLabel").textContent = periodName(periodCols[activePeriod].label);
-  if (!titleEdited)
-    $("#diagramTitle").value =
-      "Services · " + periodName(periodCols[activePeriod].label);
+
   render();
 }
 function clear() {
@@ -295,9 +338,6 @@ function draw(target, D, interactive = false) {
       .text("Total");
 }
 function render() {
-  if (!titleEdited && periodCols[activePeriod])
-    $("#diagramTitle").value =
-      "Services · " + periodName(periodCols[activePeriod].label);
   let D = {
     data,
     colors: C,

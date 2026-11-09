@@ -548,7 +548,7 @@ test("donut HTML keeps a coloured key, live period slider, compact tooltip and h
     assert.equal(doc.querySelectorAll(".legend i").length, 8);
     slider.value = "2";
     slider.dispatchEvent(new exported.window.Event("input"));
-    assert.match(doc.querySelector("h1").textContent, /2026/);
+    assert.equal(doc.querySelector("h1").textContent, "");
     const slice = doc.querySelector(".slice");
     slice.dispatchEvent(
       new exported.window.MouseEvent("mouseenter", {
@@ -576,4 +576,211 @@ test("Camden samples use the reference neighbourhoods and add clearly fictional 
   assert.equal(new Set(rows.filter((r) => r[0]).map((r) => r[5])).size, 5);
   assert.match(samples.map[0][6], /illustrative/);
   assert.ok(+find("Belsize")[6] > 0);
+});
+test("curated sample catalog renders every non-map dataset with source columns", () => {
+  vm.runInNewContext(
+    fs.readFileSync("assets/sample-sets.js", "utf8"),
+    samplesContext,
+  );
+  for (const [name, sets] of Object.entries(
+    samplesContext.window.chartSampleSets,
+  )) {
+    assert.ok(sets.length >= 3 && sets.length <= 5);
+    for (const set of sets) {
+      assert.ok(set.rows[0].includes("Source URL"), set.title);
+      if (name === "map") continue;
+      const h = harness(name);
+      try {
+        h.w.chartBridge.setData(set.rows);
+        assert.ok(
+          h.w.document.querySelectorAll("#svg path,#svg rect,#svg circle")
+            .length >= 2,
+          set.title,
+        );
+        assert.equal(
+          h.w.document.querySelector("#status")?.textContent || "",
+          "",
+          set.title,
+        );
+      } finally {
+        h.dom.window.close();
+      }
+    }
+  }
+});
+test("scatter major grid intervals apply to both axes", () => {
+  const h = harness("scatter");
+  try {
+    h.w.chartBridge.setData([
+      ["Name", "X", "Y"],
+      ["A", "3", "8"],
+      ["B", "38", "46"],
+    ]);
+    for (const id of ["xGrid", "yGrid"]) {
+      const el = h.w.document.getElementById(id);
+      el.value = "10";
+      el.oninput();
+    }
+    const values = [...h.w.document.querySelectorAll(".axis .tick")].map(
+      (n) => n.__data__,
+    );
+    assert.ok(values.length > 4);
+    assert.ok(values.every((v) => v % 10 === 0));
+  } finally {
+    h.dom.window.close();
+  }
+});
+test("donut accepts tidy rows and transposed periods", () => {
+  const h = harness("donut");
+  try {
+    for (const rows of [
+      [
+        ["Category", "Period", "Value"],
+        ["A", "2020", "10"],
+        ["B", "2020", "20"],
+        ["A", "2021", "30"],
+        ["B", "2021", "40"],
+      ],
+      [
+        ["Year", "A", "B"],
+        ["2020", "10", "20"],
+        ["2021", "30", "40"],
+      ],
+    ]) {
+      h.w.chartBridge.setData(rows);
+      assert.equal(h.w.document.querySelector("#period").max, "1");
+      assert.equal(
+        vm.runInContext("data.reduce((n,d)=>n+d.value,0)", h.context),
+        30,
+      );
+    }
+  } finally {
+    h.dom.window.close();
+  }
+});
+test("semicolon CSV preserves punctuation inside quoted cells", () => {
+  assert.deepEqual(utils.parseDelimited('Name;Value\n"Address, London";12'), [
+    ["Name", "Value"],
+    ["Address, London", "12"],
+  ]);
+});
+
+test("map label boxes stay inside boundaries and avoid holes and pins", () => {
+  const context = {
+    map: { latLngToContainerPoint: ([y, x]) => ({ x, y }) },
+    document: {
+      createElement: () => ({
+        getContext: () => ({ measureText: (t) => ({ width: t.length * 5.7 }) }),
+      }),
+    },
+    labelParts: (d) => ({ main: d.name, sub: [] }),
+  };
+  vm.createContext(context);
+  for (const fn of ["pointInRing", "segmentDistance", "fitAreaLabel"])
+    vm.runInContext(mapFunction(fn), context);
+  const outer = [
+      [0, 0],
+      [220, 0],
+      [220, 130],
+      [0, 130],
+      [0, 0],
+    ],
+    hole = [
+      [85, 45],
+      [135, 45],
+      [135, 85],
+      [85, 85],
+      [85, 45],
+    ];
+  const fit = context.fitAreaLabel(
+    {
+      feature: { geometry: { type: "Polygon", coordinates: [outer, hole] } },
+      data: { name: "Example area" },
+    },
+    [{ x: 0, y: 0, w: 35, h: 50 }],
+  );
+  assert.ok(fit);
+  const b = fit.box;
+  for (let x = b.x; x <= b.x + b.w; x += 2)
+    for (let y = b.y; y <= b.y + b.h; y += 2) {
+      assert.ok(context.pointInRing([x, y], outer));
+      assert.ok(!context.pointInRing([x, y], hole));
+    }
+  assert.equal(
+    context.fitAreaLabel(
+      {
+        feature: {
+          geometry: {
+            type: "Polygon",
+            coordinates: [
+              [
+                [0, 0],
+                [10, 0],
+                [10, 10],
+                [0, 10],
+                [0, 0],
+              ],
+            ],
+          },
+        },
+        data: { name: "Too small" },
+      },
+      [],
+    ),
+    null,
+  );
+});
+test("address geocoding tolerates punctuation and reports uncertain matches", async () => {
+  const urls = [];
+  const context = {
+    clean: (v) => String(v ?? "").trim(),
+    fetchJSONResponse: async (url) => {
+      urls.push(url);
+      return {
+        json: async () => ({
+          candidates: [
+            {
+              score: urls.length === 1 ? 99 : 42,
+              address: "Matched street",
+              location: { x: -0.1, y: 51.5 },
+            },
+          ],
+        }),
+      };
+    },
+  };
+  vm.createContext(context);
+  vm.runInContext(mapFunction("geocodeRows"), context);
+  const result = await context.geocodeRows(
+    {
+      I: { council: -1, country: -1 },
+      d: [["218 EVERSHOLT STREET; London NW1 1BD"], ["uncertain place"]],
+    },
+    0,
+  );
+  assert.equal(result.coords.length, 1);
+  assert.equal(result.missing.length, 1);
+  assert.equal(result.coords[0].matchedAddress, "Matched street");
+  assert.ok(decodeURIComponent(urls[0]).includes("STREET, London"));
+  assert.ok(urls[0].includes("geocode.arcgis.com"));
+});
+
+test("all builders start with an empty title and preserve a supplied title", () => {
+  for (const name of ["bar", "line", "scatter", "donut", "sankey"]) {
+    const h = harness(name);
+    try {
+      const title = h.w.document.querySelector(
+        '[placeholder="Enter title here"]',
+      );
+      assert.equal(title.value, "");
+      h.w.chartBridge.setData(samples[name]);
+      assert.equal(title.value, "");
+      title.value = "My own title";
+      title.dispatchEvent(new h.w.Event("input"));
+      h.w.chartBridge.setData(samples[name]);
+      assert.equal(title.value, "My own title");
+    } finally {
+      h.dom.window.close();
+    }
+  }
 });

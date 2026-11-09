@@ -57,7 +57,9 @@ const $ = (s) => document.querySelector(s),
     "#3EB86D",
   ];
 const alias = {
-  postcode: ["POSTCODE", "POSTCODEAREA"],
+  address: ["ADDRESS", "FULLADDRESS", "STREETADDRESS", "ADDRESSLINE1"],
+  country: ["COUNTRY", "COUNTRYNAME"],
+  postcode: ["POSTCODE", "POSTCODEAREA", "POSTALCODE", "ZIP", "ZIPCODE"],
   lat: ["LAT", "LATITUDE"],
   lon: ["LON", "LNG", "LONGITUDE"],
   ward: ["WARD", "WARDNAME", "WARD25NM"],
@@ -176,17 +178,23 @@ function parse() {
       Object.entries(alias).map(([k, a]) => [k, idx(h, a)]),
     ),
     geo =
-      I.ward >= 0 || I.wardcode >= 0
-        ? "ward"
-        : I.council >= 0 || I.councilcode >= 0
-          ? "council"
-          : I.postcode >= 0
-            ? "postcode"
-            : I.lat >= 0 && I.lon >= 0
-              ? "coords"
-              : I.neighbourhood >= 0 || I.location >= 0
-                ? "location"
-                : "",
+      I.address >= 0
+        ? "address"
+        : I.lat >= 0 && I.lon >= 0
+          ? "coords"
+          : I.ward >= 0 || I.wardcode >= 0
+            ? "ward"
+            : I.council >= 0 || I.councilcode >= 0
+              ? "council"
+              : I.postcode >= 0
+                ? "postcode"
+                : I.lat >= 0 && I.lon >= 0
+                  ? "coords"
+                  : I.neighbourhood >= 0 || I.location >= 0
+                    ? "location"
+                    : I.country >= 0
+                      ? "country"
+                      : "",
     profiles = fieldProfiles(h, d),
     reserved = new Set(
       [
@@ -243,13 +251,15 @@ function rowName(p, r, fallback = "Location") {
   let i =
     p.I.label >= 0
       ? p.I.label
-      : p.I.location >= 0
-        ? p.I.location
-        : p.I.ward >= 0
-          ? p.I.ward
-          : p.I.council >= 0
-            ? p.I.council
-            : p.I.postcode;
+      : p.I.address >= 0
+        ? p.I.address
+        : p.I.location >= 0
+          ? p.I.location
+          : p.I.ward >= 0
+            ? p.I.ward
+            : p.I.council >= 0
+              ? p.I.council
+              : p.I.postcode;
   return clean(i >= 0 ? r[i] : "") || fallback;
 }
 function tipHtml(d) {
@@ -561,59 +571,169 @@ function visualCentre(feature) {
   });
   return best ? L.latLng(best.p[1], best.p[0]) : null;
 }
-function insideLabels(items) {
-  const occupied = [];
-  // Inside mode labels the shapes. Pins on top retain their names in tooltips;
-  // putting both names in the same small ward makes neither readable.
-  const visible = items.some((x) => x.kind === "area")
-    ? items.filter((x) => x.kind === "area")
-    : items;
-  visible.forEach((x) => {
-    const p = map.latLngToContainerPoint(x.latlng);
-    let w = 100;
-    if (x.feature) {
-      const ring = (
-        x.feature.geometry.type === "Polygon"
-          ? x.feature.geometry.coordinates
-          : x.feature.geometry.coordinates[0]
-      )[0].map((c) => map.latLngToContainerPoint([c[1], c[0]]));
-      const span =
-        Math.max(...ring.map((p) => p.x)) - Math.min(...ring.map((p) => p.x));
-      w = Math.max(48, Math.min(110, span * 0.7));
-    }
-    let anchor = [w / 2, 0],
-      pos = x.latlng;
-    if (x.kind === "point") {
-      const offsets = [
-        [0, -28],
-        [65, 0],
-        [-65, 0],
-        [0, 32],
-      ];
-      let chosen =
-        offsets.find(
-          ([dx, dy]) =>
-            !occupied.some(
-              (o) =>
-                Math.abs(o.x - p.x - dx) < (o.w + w) / 2 &&
-                Math.abs(o.y - p.y - dy) < 30,
-            ),
-        ) || offsets[0];
-      pos = map.containerPointToLatLng(
-        L.point(p.x + chosen[0], p.y + chosen[1]),
-      );
-    } else occupied.push({ x: p.x, y: p.y, w });
-    const m = L.marker(pos, {
-      interactive: false,
-      icon: L.divIcon({
-        className: "mapLabel insideLabel",
-        html: labelHtml(x.data, 11),
-        iconSize: [w, 0],
-        iconAnchor: anchor,
+// Fit the entire fixed-size text block, not only its centre, inside a polygon.
+function fitAreaLabel(item, obstacles) {
+  const polys = (
+    item.feature.geometry.type === "Polygon"
+      ? [item.feature.geometry.coordinates]
+      : item.feature.geometry.coordinates
+  ).map((poly) =>
+    poly.map((r) =>
+      r.map((c) => {
+        const p = map.latLngToContainerPoint([c[1], c[0]]);
+        return [p.x, p.y];
       }),
-    }).addTo(map);
-    labels.push(m);
-  });
+    ),
+  );
+  const canvas = document.createElement("canvas"),
+    ctx = canvas.getContext("2d");
+  ctx.font = '700 11px Inter, "Segoe UI", sans-serif';
+  const parts = labelParts(item.data),
+    words = parts.main.split(/\s+/);
+  const variants = [];
+  for (const maxWidth of [140, 110, 90, 72, 56, 44, 34]) {
+    const lines = [];
+    let line = "";
+    const wrappedWords = words.flatMap((word) => {
+      if (ctx.measureText(word).width <= maxWidth || word.length < 9)
+        return [word];
+      const breaks = {
+        Haverstock: ["Haver-", "stock"],
+        Bloomsbury: ["Blooms-", "bury"],
+        Hampstead: ["Hamp-", "stead"],
+      };
+      return breaks[word] || [word];
+    });
+    for (const word of wrappedWords) {
+      const next = line ? line + " " + word : word;
+      if (line && ctx.measureText(next).width > maxWidth) {
+        lines.push(line);
+        line = word;
+      } else line = next;
+    }
+    if (line) lines.push(line);
+    const all = [...lines, ...parts.sub];
+    variants.push({
+      lines,
+      sub: parts.sub,
+      w: Math.max(...all.map((t) => ctx.measureText(t).width)) + 6,
+      h: all.length * 14 + 4,
+    });
+  }
+  let best = null;
+  for (const poly of polys) {
+    const outer = poly[0],
+      xs = outer.map((p) => p[0]),
+      ys = outer.map((p) => p[1]);
+    const minX = Math.min(...xs),
+      maxX = Math.max(...xs),
+      minY = Math.min(...ys),
+      maxY = Math.max(...ys);
+    const inside = (p) =>
+      pointInRing(p, outer) && !poly.slice(1).some((r) => pointInRing(p, r));
+    const candidates = [];
+    for (let ix = 0; ix < 23; ix++)
+      for (let iy = 0; iy < 23; iy++) {
+        const p = [
+          minX + ((ix + 0.5) * (maxX - minX)) / 23,
+          minY + ((iy + 0.5) * (maxY - minY)) / 23,
+        ];
+        if (!inside(p)) continue;
+        let clearance = Infinity;
+        for (const ring of poly)
+          for (let i = 0; i < ring.length; i++)
+            clearance = Math.min(
+              clearance,
+              segmentDistance(p, ring[i], ring[(i + 1) % ring.length]),
+            );
+        candidates.push({ p, clearance });
+      }
+    candidates.sort((a, b) => b.clearance - a.clearance);
+    for (const { p, clearance } of candidates.slice(0, 100))
+      for (const v of variants) {
+        const box = { x: p[0] - v.w / 2, y: p[1] - v.h / 2, w: v.w, h: v.h };
+        if (
+          obstacles.some(
+            (b) =>
+              box.x < b.x + b.w &&
+              box.x + box.w > b.x &&
+              box.y < b.y + b.h &&
+              box.y + box.h > b.y,
+          )
+        )
+          continue;
+        let fits = true;
+        // Check the padded perimeter at 2px resolution, plus boundary vertices
+        // to reject concave notches and holes completely enclosed by the box.
+        for (let x = box.x; x <= box.x + box.w; x += 2)
+          if (!inside([x, box.y]) || !inside([x, box.y + box.h])) {
+            fits = false;
+            break;
+          }
+        if (!fits) continue;
+        for (let y = box.y; y <= box.y + box.h; y += 2)
+          if (!inside([box.x, y]) || !inside([box.x + box.w, y])) {
+            fits = false;
+            break;
+          }
+        if (
+          !fits ||
+          poly.some((r) =>
+            r.some(
+              ([x, y]) =>
+                x > box.x &&
+                x < box.x + box.w &&
+                y > box.y &&
+                y < box.y + box.h,
+            ),
+          )
+        )
+          continue;
+        const score = clearance - v.lines.length * 1.5;
+        if (!best || score > best.score) best = { ...v, p, box, score };
+      }
+  }
+  return best;
+}
+function insideLabels(items) {
+  const areas = items.filter((x) => x.kind === "area"),
+    fallback = [];
+  const obstacles = items
+    .filter((x) => x.kind === "point")
+    .map((x) => {
+      const p = map.latLngToContainerPoint(x.latlng);
+      return { x: p.x - 14, y: p.y - 28, w: 28, h: 32 };
+    });
+  for (const x of areas.length ? areas : items) {
+    const fit = x.feature ? fitAreaLabel(x, obstacles) : null;
+    if (x.feature && !fit) {
+      fallback.push(x);
+      continue;
+    }
+    const pos = fit ? map.containerPointToLatLng(L.point(...fit.p)) : x.latlng;
+    const html = fit
+      ? '<div><span class="main" style="font-size:11px">' +
+        fit.lines.map(esc).join("<br>") +
+        "</span>" +
+        fit.sub.map((t) => '<span class="sub">' + esc(t) + "</span>").join("") +
+        "</div>"
+      : labelHtml(x.data, 11);
+    const w = fit ? fit.w : 100;
+    labels.push(
+      L.marker(pos, {
+        interactive: false,
+        icon: L.divIcon({
+          className: "mapLabel insideLabel",
+          html,
+          iconSize: [w, 0],
+          iconAnchor: [w / 2, 0],
+        }),
+      }).addTo(map),
+    );
+    if (fit) obstacles.push(fit.box);
+  }
+  // An area too small for an 11px label gets an outside callout, never clipped text.
+  if (fallback.length) outsideLabels(fallback);
 }
 function outsideLabels(items) {
   let ranked = items
@@ -690,6 +810,10 @@ function outsideLabels(items) {
 }
 function applyLabels(items) {
   clearLabels();
+  document.documentElement.style.setProperty(
+    "--label-colour",
+    getColour("labels", "#17212b"),
+  );
   if (labelMode === "inside") insideLabels(items);
   if (labelMode === "outside") outsideLabels(items);
 }
@@ -785,20 +909,81 @@ async function fetchArea(p, kind, ni) {
   };
 }
 async function geocodeRows(p, ni) {
-  let coords = [];
+  let coords = [],
+    missing = [];
   for (let r of p.d) {
     let name = clean(r[ni]);
     if (!name) continue;
     let context = p.I.council >= 0 ? clean(r[p.I.council]) : "",
-      q = [name, context, "UK"].filter(Boolean).join(", "),
-      url = `https://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?SingleLine=${encodeURIComponent(q)}&f=json&countryCode=GB&maxLocations=1`,
+      q = [name, context, p.I.country >= 0 ? clean(r[p.I.country]) : ""]
+        .filter(Boolean)
+        .join(", ")
+        .replace(/[;|]+/g, ", ")
+        .replace(/\s+/g, " "),
+      url = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?SingleLine=${encodeURIComponent(q)}&f=json&maxLocations=1`,
       z = await fetchJSONResponse(url).then((x) => x.json()),
       c = z.candidates?.[0];
-    if (c) coords.push({ r, lat: c.location.y, lon: c.location.x });
+    if (c && c.score >= 85)
+      coords.push({
+        r,
+        lat: c.location.y,
+        lon: c.location.x,
+        matchedAddress: c.address,
+        matchScore: c.score,
+      });
+    else missing.push(name);
   }
-  return coords.length ? { kind: "points", p, coords } : null;
+  return coords.length ? { kind: "points", p, coords, missing } : null;
 }
 async function prepare(p) {
+  if (p.geo === "country") {
+    const gj = await fetchJSONResponse("../assets/countries.geojson").then(
+      (r) => r.json(),
+    );
+    const aliases = {
+      UK: "UNITEDKINGDOM",
+      GB: "UNITEDKINGDOM",
+      USA: "UNITEDSTATESOFAMERICA",
+      US: "UNITEDSTATESOFAMERICA",
+    };
+    const key = (v) => aliases[norm(v)] || norm(v);
+    const rowMap = new Map(),
+      features = [],
+      missing = [];
+    for (const row of p.d) {
+      const name = key(row[p.I.country]);
+      const f = gj.features.find((f) =>
+        [f.properties.NAME, f.properties.ISO2, f.properties.ISO3].some(
+          (v) => key(v) === name,
+        ),
+      );
+      if (f) {
+        features.push(f);
+        rowMap.set(norm(f.properties.NAME), row);
+      } else missing.push(row[p.I.country]);
+    }
+    if (!features.length)
+      throw Error(
+        "No countries matched. Use country names or two- or three-letter country codes.",
+      );
+    return {
+      kind: "area",
+      p,
+      gj: { type: "FeatureCollection", features },
+      rowMap,
+      field: "NAME",
+      ni: p.I.country,
+      missing,
+    };
+  }
+
+  if (p.geo === "address") {
+    const result = await geocodeRows(p, p.I.address);
+    if (result) return result;
+    throw Error(
+      "No confident address matches were found. Include the street number, town, postcode and country, or use Latitude and Longitude columns.",
+    );
+  }
   // A table may contain ward boundaries and postcode pins. Resolve both sets;
   // neither a postcode column nor blank ward cells should discard the other.
   if (["ward", "council"].includes(p.geo) && p.I.postcode >= 0) {
@@ -1029,7 +1214,7 @@ function renderAreaSet(area) {
       let d = recs.find((x) => x.f === f),
         c = colourFor(d);
       return {
-        color: "#fff",
+        color: getColour("outline", "#ffffff"),
         weight: 4,
         opacity: 1,
         lineCap: "round",
@@ -1149,7 +1334,20 @@ function renderPointSet(points) {
             : mode === "category"
               ? colours["pin:" + category]
               : getColour("pin", "#5653FF"),
-      d = { name, value, category, meta: meta(p, r) },
+      d = {
+        name,
+        value,
+        category,
+        meta: {
+          ...meta(p, r),
+          ...(x.matchedAddress
+            ? {
+                "Matched address": x.matchedAddress,
+                "Match confidence": x.matchScore,
+              }
+            : {}),
+        },
+      },
       size =
         pinStyle === "bubble" && Number.isFinite(value)
           ? Math.max(12, Math.sqrt(Math.max(0, value) / max) * 28)
@@ -1272,6 +1470,7 @@ async function interactiveHtml() {
   root.querySelector(".downloadWrap").style.display = "none";
   root.querySelector(".toolbar").style.display = "none";
   root.querySelector("#title").setAttribute("readonly", "");
+  root.querySelector("#title").removeAttribute("placeholder");
   root
     .querySelectorAll(".sr-only,.title-editor::after")
     .forEach((n) => n.remove());
@@ -1534,7 +1733,7 @@ function mapVectorSVG(basemap = "") {
   parts.push(
     '</g><text x="16" y="' +
       (H + 108) +
-      '" font-family="system-ui" font-size="11">Geographic data: Esri / ONS / Postcodes.io.</text></svg>',
+      '" font-family="system-ui" font-size="11">Geographic data: Esri / ONS / Postcodes.io / Natural Earth.</text></svg>',
   );
   return parts.join("");
 }
@@ -1689,6 +1888,8 @@ async function fetchJSONResponse(url, options) {
   const key = url + JSON.stringify(options || {});
   if (!requestCache.has(key)) {
     const promise = fetch(url, {
+      cache: "no-store",
+      referrerPolicy: "no-referrer",
       ...options,
       signal: AbortSignal.timeout(20000),
     })
@@ -1712,6 +1913,8 @@ async function fetchJSONResponse(url, options) {
   return { json: async () => structuredClone(data) };
 }
 function syncControls() {
+  $("#outlineColour").value = getColour("outline", "#ffffff");
+  $("#labelColour").value = getColour("labels", "#17212b");
   $("#themeBtn").textContent = "Dark map";
   $("#themeBtn").classList.toggle("active", darkMap);
   $("#themeBtn").setAttribute("aria-pressed", String(darkMap));
@@ -1738,6 +1941,15 @@ function syncControls() {
   $("#valuesBtn").classList.toggle("active", showValues);
   $("#detailsBtn").classList.toggle("active", showDetails);
 }
+[
+  ["outlineColour", "outline"],
+  ["labelColour", "labels"],
+].forEach(([id, key]) => {
+  $("#" + id).oninput = (e) => {
+    colours[key] = e.target.value;
+    if (current) render();
+  };
+});
 $("#themeBtn").onclick = () => {
   darkMap = !darkMap;
   setMapMode();
@@ -1842,6 +2054,8 @@ window.chartSettings = {
 
 window.chartBridge = {
   setData(rows) {
+    hoverOff();
+    $("#tip").textContent = "";
     M = (rows || []).map((r) => r.slice());
     try {
       build();

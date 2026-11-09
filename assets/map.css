@@ -486,3 +486,22 @@ body {
   width: 18px;
   height: 18px;
 }
+
+.colourSetting {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.colourSetting input {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.mapLabel .main,
+.mapLabel .sub {
+  color: var(--label-colour, #17212b) !important;
+}

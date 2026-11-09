@@ -265,11 +265,21 @@ function wideToLinks(h, data) {
   let numericScores = h.map(
       (_, j) => data.filter((r) => Number.isFinite(number(r[j]))).length,
     ),
-    vi = numericScores.indexOf(Math.max(...numericScores));
+    vi = hidx(h, alias.value);
+  if (vi < 0) vi = numericScores.indexOf(Math.max(...numericScores));
+  const pi = hidx(h, alias.period);
   if (vi < 0 || numericScores[vi] === 0) return null;
   let pathCols = h
     .map((_, i) => i)
-    .filter((i) => i !== vi && data.some((r) => clean(r[i])));
+    .filter(
+      (i) =>
+        i !== vi &&
+        i !== pi &&
+        !/^(SOURCEURL|URL|UNIT|UNITS|NOTE|NOTES|DESCRIPTION|METHOD)$/.test(
+          norm(h[i]),
+        ) &&
+        data.some((r) => clean(r[i])),
+    );
   if (pathCols.length < 2) return null;
   let links = [];
   for (const r of data) {
@@ -281,7 +291,7 @@ function wideToLinks(h, data) {
         s: path[i],
         t: path[i + 1],
         v,
-        period: "",
+        period: pi >= 0 ? clean(r[pi]) : "",
         stage: i + 1,
         colour: "",
         group: "",
@@ -290,7 +300,7 @@ function wideToLinks(h, data) {
   }
   return {
     links,
-    periodIndex: -1,
+    periodIndex: pi,
     stageIndex: 0,
     valueLabel: clean(h[vi]) || "Value",
     groupLabel: "",
@@ -1115,7 +1125,7 @@ $("#reset").onclick = () => {
   model = null;
   periodModels = [];
   activePeriod = 0;
-  $("#diagramTitle").value = "Enter title here";
+  $("#diagramTitle").value = "";
   grid();
   clear();
   clearStatus();

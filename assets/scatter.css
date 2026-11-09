@@ -566,3 +566,18 @@ input[type="range"]::-webkit-slider-thumb {
   width: auto !important;
   max-width: max-content !important;
 }
+
+.gridStep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #59636e;
+}
+.gridStep input {
+  width: 60px;
+  border: 1px solid #dce2e7;
+  border-radius: 6px;
+  padding: 5px;
+  font: inherit;
+}

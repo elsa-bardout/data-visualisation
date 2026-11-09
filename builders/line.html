@@ -2,9 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="referrer" content="no-referrer" />
     <meta name="viewport" content="width=device-width" />
     <title>Line chart builder</title>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="../assets/vendor/d3.min.js"></script>
     <link rel="stylesheet" href="../assets/line.css" />
     <link rel="stylesheet" href="../assets/builder.css" />
     <script src="../assets/shared.js"></script>
@@ -22,7 +23,9 @@
           <input
             id="diagramTitle"
             class="diagramTitle"
-            value="Enter title here"
+            value=""
+            placeholder="Enter title here"
+            autocomplete="off"
           />
           <div class="menuWrap">
             <button

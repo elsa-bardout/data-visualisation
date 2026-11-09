@@ -176,3 +176,41 @@ test("CSV upload replaces the table and remains undoable", async () => {
     h.dom.window.close();
   }
 });
+
+test("curated samples cycle and wrap independently without generating a title", () => {
+  const h = app();
+  try {
+    h.w.chartSampleSets = {
+      sankey: [
+        {
+          title: "First",
+          rows: [
+            ["Source", "Target", "Value"],
+            ["A", "B", "1"],
+          ],
+        },
+        {
+          title: "Second",
+          rows: [
+            ["Source", "Target", "Value"],
+            ["C", "D", "2"],
+          ],
+        },
+      ],
+    };
+    const sample = h.doc.querySelector("#sample"),
+      cell = () => h.doc.querySelector('[data-r="1"][data-c="0"]').textContent;
+    sample.click();
+    assert.equal(cell(), "A");
+    sample.click();
+    assert.equal(cell(), "C");
+    sample.click();
+    assert.equal(cell(), "A");
+    assert.match(
+      h.doc.querySelector(".privacyNote").textContent,
+      /Maps send\s+location fields/,
+    );
+  } finally {
+    h.dom.window.close();
+  }
+});

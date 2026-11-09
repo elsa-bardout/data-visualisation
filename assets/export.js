@@ -56,7 +56,7 @@
     return {
       label,
       svg: new XMLSerializer().serializeToString(svg),
-      title: document.querySelector("#diagramTitle")?.value || "Chart",
+      title: document.querySelector("#diagramTitle")?.value || "",
       legend: [...document.querySelectorAll("#legend label")].map((n) => ({
         name: n.textContent.trim(),
         colour: getComputedStyle(n.querySelector(".swatch") || n)
@@ -151,18 +151,18 @@
     show();
   }
   function download(frames, active = 0) {
-    const title = document.querySelector("#diagramTitle")?.value || "Chart";
+    const title = document.querySelector("#diagramTitle")?.value || "";
     const payload = JSON.stringify({ title, frames, active }).replace(
       /</g,
       "\\u003c",
     );
-    const html = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${ChartUtils.escape(title)}</title><style>*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;background:#f7f8fa;color:#17212b;font:14px/1.45 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:1900px;margin:auto;padding:18px}.card{background:white;border:1px solid #e5e9ed;border-radius:16px;box-shadow:0 10px 30px #14283a0d;overflow:hidden}header{padding:18px 20px}h1{font-size:20px;line-height:1.2;margin:0;font-weight:700}.period{display:flex;align-items:center;gap:12px;margin-top:18px;font-size:12px;color:#707986}.period input{width:180px;accent-color:#172b3f}.period output{color:#17212b}.legend{display:flex;flex-wrap:wrap;gap:14px 20px;padding:14px 20px;border-top:1px solid #e5e9ed;border-bottom:1px solid #e5e9ed;font-size:12px;color:#59636e}.legend:empty{display:none}.legend span{display:flex;align-items:center;gap:9px}.legend i{width:18px;height:18px;border-radius:5px;box-shadow:0 0 0 1px #dce2e8;outline:2px solid white;outline-offset:-2px}main{overflow:auto;padding:20px}svg{max-width:100%;height:auto;display:block;margin:auto}.tip{position:fixed;left:0;top:0;bottom:auto;width:max-content;height:auto;white-space:pre-line;background:#17212b;color:white;padding:8px 10px;border-radius:8px;pointer-events:none;opacity:0;max-width:260px;font-size:12px;line-height:1.45;box-shadow:0 6px 18px #0003;z-index:10}svg [data-tooltip]{transition:opacity .15s}:focus-visible{outline:2px dotted #707986;outline-offset:2px}@media(max-width:600px){.app{padding:10px}main{padding:10px}}</style><div class="app"><section class="card"><header><h1></h1><label class="period">Period <input id="period" type="range" min="0" step="1"><output></output></label></header><div class="legend"></div><main></main></section></div><div class="tip" role="status"></div><script type="application/json" id="chart-data">${payload}</script><script>(${exportRuntime.toString()})();</script></html>`;
+    const html = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${ChartUtils.escape(title)}</title><style>*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;background:#f7f8fa;color:#17212b;font:14px/1.45 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:1900px;margin:auto;padding:18px}.card{background:white;border:1px solid #e5e9ed;border-radius:16px;box-shadow:0 10px 30px #14283a0d;overflow:hidden}header{padding:18px 20px}h1:empty{display:none}h1{font-size:20px;line-height:1.2;margin:0;font-weight:700}.period{display:flex;align-items:center;gap:12px;margin-top:18px;font-size:12px;color:#707986}.period input{width:180px;accent-color:#172b3f}.period output{color:#17212b}.legend{display:flex;flex-wrap:wrap;gap:14px 20px;padding:14px 20px;border-top:1px solid #e5e9ed;border-bottom:1px solid #e5e9ed;font-size:12px;color:#59636e}.legend:empty{display:none}.legend span{display:flex;align-items:center;gap:9px}.legend i{width:18px;height:18px;border-radius:5px;box-shadow:0 0 0 1px #dce2e8;outline:2px solid white;outline-offset:-2px}main{overflow:auto;padding:20px}svg{max-width:100%;height:auto;display:block;margin:auto}.tip{position:fixed;left:0;top:0;bottom:auto;width:max-content;height:auto;white-space:pre-line;background:#17212b;color:white;padding:8px 10px;border-radius:8px;pointer-events:none;opacity:0;max-width:260px;font-size:12px;line-height:1.45;box-shadow:0 6px 18px #0003;z-index:10}svg [data-tooltip]{transition:opacity .15s}:focus-visible{outline:2px dotted #707986;outline-offset:2px}@media(max-width:600px){.app{padding:10px}main{padding:10px}}</style><div class="app"><section class="card"><header><h1></h1><label class="period">Period <input id="period" type="range" min="0" step="1"><output></output></label></header><div class="legend"></div><main></main></section></div><div class="tip" role="status"></div><script type="application/json" id="chart-data">${payload}</script><script>(${exportRuntime.toString()})();</script></html>`;
     const u = URL.createObjectURL(
         new Blob([html], { type: "text/html;charset=utf-8" }),
       ),
       a = document.createElement("a");
     a.href = u;
-    a.download = title.replace(/[\\/:*?"<>|]/g, "-") + ".html";
+    a.download = (title || "Chart").replace(/[\\/:*?"<>|]/g, "-") + ".html";
     a.click();
     setTimeout(() => URL.revokeObjectURL(u), 1000);
   }

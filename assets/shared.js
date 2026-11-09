@@ -34,7 +34,23 @@
   const tooltip = (value) =>
     escape(value).replace(/&lt;(\/?b|br\s*\/?)&gt;/gi, "<$1>");
   function parseDelimited(text) {
-    const delimiter = text.includes("\t") ? "\t" : ",";
+    text = String(text).replace(/^\uFEFF/, "");
+    let first = "",
+      quotedHeader = false;
+    for (const c of text) {
+      if (c === '"') quotedHeader = !quotedHeader;
+      if (!quotedHeader && (c === "\n" || c === "\r")) break;
+      first += c;
+    }
+    const counts = { "\t": 0, ",": 0, ";": 0 };
+    let q = false;
+    for (const c of first) {
+      if (c === '"') q = !q;
+      else if (!q && c in counts) counts[c]++;
+    }
+    const delimiter = Object.keys(counts).sort(
+      (a, b) => counts[b] - counts[a],
+    )[0];
     const rows = [[]];
     let value = "",
       quoted = false;

@@ -8,11 +8,11 @@ Choose an icon in the floating toolbar, then paste a spreadsheet range or try th
 
 The table automatically grows an empty row and column as you type or paste. The bin resets data and charts; Ctrl/Cmd+Z undoes data edits, samples and resets (Shift+Ctrl/Cmd+Z redoes). The source table stays in place when switching charts. Chart settings and data stay in memory for the current page session.
 
-Samples demonstrate multiple periods, series, signed stacks, targets, annotations and bubble sizes. Values are fictional. The map combines all 20 [Camden wards](https://www.ons.gov.uk/explore-local-statistics/areas/E09000007-camden) with three [library postcode locations](https://www.camden.gov.uk/libraries-opening-times). Ward and pin rows are separate so each has its own value; the Council column disambiguates ward names.
+The sample button cycles through 3–4 sourced datasets for each chart. See [SOURCES.md](SOURCES.md) for provenance, units, derivations and supported input formats.
 
 Charts support SVG, PNG, and standalone HTML exports. HTML snapshots retain the title, colour key, tooltips, hover emphasis and period slider. Map HTML is a presentation view without editing controls; it embeds resolved geographic data but still needs online Leaflet resources and basemap tiles. Map SVG keeps shapes and labels editable and embeds the basemap as a separate raster layer. PNG uses the same composition. Basemap inclusion needs loaded tiles whose provider permits cross-origin capture.
 
-The map sample uses the five Camden neighbourhoods, with explicitly fictional population and household figures for tooltip examples. Area and pin colours can be edited independently. Inside labels centre on areas, with pin names available on hover. Outside labels follow the map bounds as scale changes. The dark-map toggle inverts the basemap while retaining category colours.
+The Camden sample uses real wards, the supplied neighbourhood groups and library postcodes. Outline, label, area and pin colours can be edited independently. Fixed-size inside labels are fitted to the projected shapes; labels that cannot fit use outside callouts. Map opacity starts at 50%. The dark-map toggle uses a dark basemap with light roads.
 
 Map lookups send geographic fields to Postcodes.io or Esri. Ambiguous wards require a council hint or a ward code; unmatched locations are reported. Coordinates can be used without geocoding. All other data processing occurs in the browser. Third-party chart libraries and tiles require internet access.
 
@@ -48,3 +48,7 @@ pnpm check
 - `tests/`: isolated DOM and unit regressions covering data interpretation, exports, signed values, history, and asynchronous map behaviour.
 
 The map redesign from `map-redesign` is the baseline for this version. Existing branch history is preserved.
+
+Titles start empty with an “Enter title here” placeholder across all charts. No AI title inference is used.
+
+Privacy: data and Undo history live in tab memory; there is no application autosave or full-table upload. Map lookups send location fields to external providers and basemap requests reveal the viewed area. See [privacy details](PRIVACY.html).

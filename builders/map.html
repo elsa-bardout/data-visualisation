@@ -2,14 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="referrer" content="no-referrer" />
     <meta content="width=device-width" name="viewport" />
     <title>Map builder</title>
-    <link
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      rel="stylesheet"
-    />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <link href="../assets/vendor/leaflet.css" rel="stylesheet" />
+    <script src="../assets/vendor/leaflet.js"></script>
     <link rel="stylesheet" href="../assets/map.css" />
     <link rel="stylesheet" href="../assets/builder.css" />
     <script src="../assets/shared.js"></script>
@@ -23,7 +20,9 @@
             aria-label="Map title"
             class="title"
             id="title"
-            value="Enter title here"
+            value=""
+            placeholder="Enter title here"
+            autocomplete="off"
           />
           <div class="menuWrap downloadWrap">
             <button aria-label="Download" class="btn primary" id="download">
@@ -80,8 +79,8 @@
                 max="100"
                 min="0"
                 type="range"
-                value="28"
-              /><b id="mapOpacityV">28%</b></label
+                value="50"
+              /><b id="mapOpacityV">50%</b></label
             >
           </div>
           <div class="toolbarRow toolbarActions">
@@ -115,7 +114,21 @@
                 </button>
               </div>
             </div>
-            <button class="btn" id="themeBtn" type="button">Dark map</button
+            <label class="colourSetting"
+              >Outline
+              <input
+                id="outlineColour"
+                type="color"
+                value="#ffffff"
+                aria-label="Map outline colour" /></label
+            ><label class="colourSetting"
+              >Labels
+              <input
+                id="labelColour"
+                type="color"
+                value="#17212b"
+                aria-label="Map label colour" /></label
+            ><button class="btn" id="themeBtn" type="button">Dark map</button
             ><button class="btn" id="labelBtn">Labels outside</button>
             <div class="menuWrap colourWrap">
               <button class="btn" id="colourByBtn">

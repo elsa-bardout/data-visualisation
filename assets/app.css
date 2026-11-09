@@ -364,13 +364,24 @@ a:focus-visible,
   line-height: 1.5;
 }
 .mode svg {
-  width: 25px;
-  height: 25px;
-  stroke-width: 1.45;
+  width: 29px;
+  height: 29px;
+  stroke-width: 1.35;
 }
 .mode:hover {
   color: #172b3f;
 }
 .indicator {
   border-radius: 12px;
+}
+
+.privacyNote {
+  margin: 8px 8px 0;
+  color: #707986;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.privacyNote a {
+  color: inherit;
+  text-underline-offset: 2px;
 }

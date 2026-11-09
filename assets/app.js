@@ -3,6 +3,7 @@
   const $ = (s) => document.querySelector(s),
     modes = ["sankey", "donut", "bar", "line", "scatter", "map"];
   const examples = window.chartSamples;
+  const sampleIndex = {};
   let data = [Array(4).fill("")],
     mode = "sankey",
     states = {},
@@ -255,16 +256,19 @@
       )
       .map((x) => x.i);
     if (mode === "donut") {
-      if (
-        h.some((v) =>
-          ["SERIES", "SOURCE", "TARGET", "PERIOD"].includes(norm(v)),
-        )
-      ) {
+      if (h.some((v) => ["SOURCE", "TARGET"].includes(norm(v)))) {
         $("#diagnostics").textContent =
           "For a donut, put one category per row and a positive amount in the next column. To compare periods, give each period its own amount column. Try the donut sample to see the layout.";
         return;
       }
-      indices = h.map((_, i) => i).filter((i) => i > 0 && h[i]?.trim());
+      indices = h
+        .map((_, i) => i)
+        .filter(
+          (i) =>
+            i > 0 &&
+            !["PERIOD", "YEAR", "DATE"].includes(norm(h[i])) &&
+            rows.some((r) => Number.isFinite(ChartUtils.number(r[i]))),
+        );
     }
     if (
       mode === "sankey" &&
@@ -457,7 +461,11 @@
   };
   $("#sample").onclick = () => {
     checkpoint();
-    data = copy(examples[mode]);
+    const sets = window.chartSampleSets?.[mode];
+    const index = sampleIndex[mode] || 0;
+    const selected = sets?.[index % sets.length];
+    sampleIndex[mode] = index + 1;
+    data = copy(selected?.rows || examples[mode]);
     frames[mode].contentWindow?.chartBridge?.resetAll();
     delete states[mode];
 
@@ -466,7 +474,17 @@
 
     push();
 
-    notice("Sample loaded. Undo restores your previous data.");
+    if (selected) {
+      notice(
+        "Sample " +
+          ((index % sets.length) + 1) +
+          " of " +
+          sets.length +
+          ": " +
+          selected.title +
+          ". Click Try sample data again for another. Sources are in the table.",
+      );
+    } else notice("Sample loaded. Undo restores your previous data.");
   };
   $("#clear").onclick = () => {
     checkpoint();
