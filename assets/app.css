@@ -250,7 +250,8 @@ body {
   gap: 12px;
   flex-shrink: 0;
 }
-#sample {
+#sample,
+#upload {
   font: inherit;
   font-size: 12px;
   border: 1px solid #e0e5e9;
@@ -261,6 +262,7 @@ body {
   cursor: pointer;
 }
 #sample:hover,
+#upload:hover,
 .sharedReset:hover {
   background: #f3f5f7;
 }
