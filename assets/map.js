@@ -736,22 +736,34 @@ function insideLabels(items) {
   if (fallback.length) outsideLabels(fallback);
 }
 function outsideLabels(items) {
-  let ranked = items
-      .map((x) => ({ ...x, p: map.latLngToContainerPoint(x.latlng) }))
-      .sort((a, b) => a.p.x - b.p.x),
-    leftN = Math.ceil(ranked.length / 2),
-    a = ranked.map((x, i) => ({
-      ...x,
-      side: i < leftN ? "left" : "right",
-      y: x.p.y,
-    })),
-    gap = Math.min(
-      56,
-      Math.max(
-        38,
-        (map.getSize().y - 56) / Math.max(1, Math.ceil(items.length / 2)),
-      ),
+  const width = map.getSize().x;
+  const validBounds = currentBounds?.isValid?.();
+  const leftEdge = validBounds
+    ? map.latLngToContainerPoint(currentBounds.getSouthWest()).x
+    : 0;
+  const rightEdge = validBounds
+    ? map.latLngToContainerPoint(currentBounds.getNorthEast()).x
+    : width;
+  const leftLine = Math.max(180, leftEdge - 32);
+  const rightLine = Math.min(width - 180, rightEdge + 32);
+  let a = items.map((x) => {
+      const p = map.latLngToContainerPoint(x.latlng);
+      return {
+        ...x,
+        p,
+        side:
+          Math.abs(p.x - leftLine) <= Math.abs(p.x - rightLine)
+            ? "left"
+            : "right",
+        y: p.y,
+      };
+    }),
+    busiestSide = Math.max(
+      1,
+      a.filter((x) => x.side === "left").length,
+      a.filter((x) => x.side === "right").length,
     ),
+    gap = Math.min(56, Math.max(20, (map.getSize().y - 56) / busiestSide)),
     min = 28,
     max = map.getSize().y - 28;
   ["left", "right"].forEach((side) => {

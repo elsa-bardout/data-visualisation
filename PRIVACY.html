@@ -36,10 +36,16 @@
     <main>
       <h1>How your data is handled</h1>
       <p>
-        The chart builder processes your table in your browser. This site does
-        not upload the full table, automatically save it, or use analytics. Data
-        and Undo history are held in the current tab's memory and are cleared
-        when you reload or close it.
+        Your browser reads your table and draws the charts on your device. The
+        website does not keep a saved copy. For charts other than maps, your
+        table is not sent to a server. Your table and Undo history stay in this
+        tab's temporary memory; reloading or closing it clears them. There is no
+        account or automatic saving.
+      </p>
+      <p>
+        You can make ordinary charts without sending the table to us. Maps are
+        different: finding places and showing a background map uses outside
+        services, as explained below.
       </p>
       <h2>Maps use external services</h2>
       <p>Opening a map can make requests to external providers:</p>
@@ -62,14 +68,32 @@
         Avoid entering confidential addresses or other sensitive locations if
         you do not want to send them to those providers.
       </p>
-      <h2>Downloads and hosting</h2>
+      <h2>Where downloads go</h2>
       <p>
-        Exports are created in your browser and saved only when you choose
-        Download. HTML exports contain chart data and settings; map HTML exports
-        also contain the source table and resolved locations. Anyone you share
-        an export with can inspect its contents. Interactive map exports still
-        request background tiles.
+        Download creates a file on your device — usually in your Downloads
+        folder, or wherever your browser asks you to save it. It is not saved to
+        this website or sent to us. If you save it in a folder synced with
+        OneDrive, iCloud or another cloud service, that service may also keep a
+        copy.
       </p>
+      <p>
+        HTML files contain the chart data and settings; map HTML files also
+        contain the source table and matched locations. Someone with the file
+        can read that data, including details that are not visible on the chart.
+        Check it before sharing. SVG and PNG files contain the exported visual.
+        Opening an interactive map HTML file still requests background maps from
+        Esri.
+      </p>
+      <h2>What to be careful with</h2>
+      <p>
+        Public places and non-sensitive figures are suitable for trying the
+        maps. Do not enter private home addresses, sensitive locations or
+        identifying details in location fields unless you are comfortable
+        sending them to the map providers. For confidential work, follow your
+        organisation's rules and use a trusted device and browser. Check where
+        downloads are saved and who can access them.
+      </p>
+      <h2>Website hosting</h2>
       <p>
         The site is hosted on GitHub Pages. As with ordinary websites, hosting
         and map providers receive connection information such as your IP

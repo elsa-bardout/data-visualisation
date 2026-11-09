@@ -784,3 +784,52 @@ test("all builders start with an empty title and preserve a supplied title", () 
     }
   }
 });
+
+test("outside map labels choose the nearer edge, even when all fall on one side", () => {
+  const placements = [];
+  const context = {
+    currentBounds: {
+      isValid: () => true,
+      getSouthWest: () => ({ x: 200, y: 600 }),
+      getNorthEast: () => ({ x: 800, y: 0 }),
+    },
+    map: {
+      getSize: () => ({ x: 1000, y: 600 }),
+      latLngToContainerPoint: (p) => p,
+      containerPointToLatLng: (p) => p,
+    },
+    labels: [],
+    labelHtml: (_data, _size, _outside, side) => side,
+    L: {
+      point: (x, y) => ({ x, y }),
+      polyline: () => ({
+        addTo() {
+          return this;
+        },
+      }),
+      divIcon: (o) => o,
+      marker: (p, o) => ({
+        addTo() {
+          placements.push({ p, side: o.icon.html });
+          return this;
+        },
+      }),
+    },
+  };
+  vm.createContext(context);
+  vm.runInContext(mapFunction("outsideLabels"), context);
+  context.items = [
+    { latlng: { x: 230, y: 100 }, data: {} },
+    { latlng: { x: 310, y: 110 }, data: {} },
+  ];
+  vm.runInContext("outsideLabels(items)", context);
+  assert.deepEqual(
+    placements.map((x) => x.side),
+    ["left", "left"],
+  );
+  assert.ok(placements[1].p.y > placements[0].p.y);
+  placements.length = 0;
+  context.items = [{ latlng: { x: 780, y: 100 }, data: {} }];
+  vm.runInContext("outsideLabels(items)", context);
+  assert.equal(placements[0].side, "right");
+});
