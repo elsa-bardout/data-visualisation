@@ -166,11 +166,13 @@ select:focus-visible,
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
-  min-width: 140px;
+  flex: 1 1 auto;
+  max-width: calc(100% - 12px);
+  min-width: 0;
 }
 .title-editor::after {
   content: "✎";
+  transform: scaleX(-1);
   color: #98a0a8;
   font-size: 15px;
   opacity: 0;
@@ -181,8 +183,8 @@ select:focus-visible,
   opacity: 0.65;
 }
 .title-editor input {
-  flex: 1;
-  width: 100%;
+  flex: 0 1 auto;
+  max-width: 100%;
   min-width: 0;
 }
 .status.error,
@@ -197,4 +199,24 @@ select:focus-visible,
 }
 .dim {
   opacity: 0.28 !important;
+}
+
+/* Screen-only chart surface; do not carry this into export documents. */
+html:not([data-export]) .canvas,
+html:not([data-export]) .mapWrap {
+  background: #fff;
+  color-scheme: only light;
+}
+.legend {
+  gap: 4px 8px !important;
+  padding: 9px 14px !important;
+}
+.legend label {
+  gap: 5px !important;
+  padding: 2px 3px !important;
+}
+.legend .swatch {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
 }

@@ -9,6 +9,29 @@
     wrap.className = "title-editor";
     titleInput.replaceWith(wrap);
     wrap.append(titleInput);
+    const sizeTitle = () => {
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      context.font = getComputedStyle(titleInput).font;
+      titleInput.style.width =
+        Math.ceil(
+          context.measureText(titleInput.value || titleInput.placeholder || "")
+            .width + 12,
+        ) + "px";
+    };
+    titleInput.addEventListener("input", sizeTitle);
+    new MutationObserver(sizeTitle).observe(titleInput, {
+      attributes: true,
+      attributeFilter: ["value"],
+    });
+    setInterval(() => {
+      if (titleInput.dataset.sizedValue !== titleInput.value) {
+        titleInput.dataset.sizedValue = titleInput.value;
+        sizeTitle();
+      }
+    }, 300);
+    sizeTitle();
   }
   const initial = window.chartSettings?.get();
   const controls = () =>

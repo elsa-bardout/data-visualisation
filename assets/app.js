@@ -431,6 +431,30 @@
     notice("Redone.");
   }
 
+  $("#upload").onclick = () => $("#uploadFile").click();
+  $("#uploadFile").onchange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+      const incoming = ChartUtils.parseDelimited(
+        (await file.text()).replace(/^\uFEFF/, ""),
+      );
+      if (!incoming.some((row) => row.some((cell) => String(cell).trim())))
+        throw new Error("empty");
+      checkpoint();
+      data = incoming;
+      selection = null;
+      renderGrid();
+      push();
+      notice("Data uploaded. Undo restores your previous table.");
+    } catch {
+      notice(
+        "Could not read this file. Save your spreadsheet as CSV or tab-separated text, then upload it again.",
+      );
+    } finally {
+      event.target.value = "";
+    }
+  };
   $("#sample").onclick = () => {
     checkpoint();
     data = copy(examples[mode]);

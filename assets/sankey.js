@@ -42,8 +42,12 @@ const STAGE_PALETTES = [
 ];
 function nodeColour(d, nodes = model?.nodes || []) {
   if (C[d.name]) return C[d.name];
-  const names = [...new Set(nodes.map((n) => n.name))];
-  return PALETTE[Math.max(0, names.indexOf(d.name)) % PALETTE.length];
+  let family = STAGE_PALETTES[d.layer % STAGE_PALETTES.length],
+    names = [
+      ...new Set(nodes.filter((n) => n.layer === d.layer).map((n) => n.name)),
+    ].sort((a, b) => a.localeCompare(b)),
+    i = Math.max(0, names.indexOf(d.name));
+  return family[i % family.length];
 }
 
 const norm = (s) =>
@@ -1008,6 +1012,19 @@ function detangle() {
       }
     }
     if (!improved) break;
+  }
+  // Mirroring all stages preserves crossings and offers a fresh arrangement
+  // even when the current ordering is already optimal.
+  const unchanged = model.nodes.every(
+    (n) => best.get(n.id) === nodeOrder.get(n.id),
+  );
+  if (unchanged) {
+    for (const layer of layers) {
+      const ns = model.nodes
+        .filter((n) => n.layer === layer)
+        .sort((a, b) => (best.get(a.id) || 0) - (best.get(b.id) || 0));
+      ns.reverse().forEach((n, i) => best.set(n.id, i));
+    }
   }
   nodeOrder = best;
   sourceLinkOrder.clear();

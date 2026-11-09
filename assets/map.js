@@ -410,11 +410,18 @@ function setMapMode() {
       map.removeLayer(tile);
       tile = null;
     }
-  } else if (!tile) {
-    tile = L.tileLayer(
-      "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-      { attribution: "Tiles © Esri", maxZoom: 19, crossOrigin: "anonymous" },
-    ).addTo(map);
+  } else {
+    const tileUrl = darkMap
+      ? "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+      : "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}";
+    // Recreate the tile grid: setUrl/redraw can use a fractional map zoom
+    // as a raster tile level, misaligning tiles after a theme change.
+    if (tile) map.removeLayer(tile);
+    tile = L.tileLayer(tileUrl, {
+      attribution: "Tiles © Esri",
+      maxZoom: 19,
+      crossOrigin: "anonymous",
+    }).addTo(map);
     tile.bringToBack();
   }
   applyMapOpacity();
@@ -1705,7 +1712,9 @@ async function fetchJSONResponse(url, options) {
   return { json: async () => structuredClone(data) };
 }
 function syncControls() {
-  $("#themeBtn").textContent = darkMap ? "Light map" : "Dark map";
+  $("#themeBtn").textContent = "Dark map";
+  $("#themeBtn").classList.toggle("active", darkMap);
+  $("#themeBtn").setAttribute("aria-pressed", String(darkMap));
   $("#mapModeBtn").textContent = {
     none: "No map",
     partial: "Partial map",
@@ -1858,7 +1867,7 @@ async function basemapImage() {
   ctx.fillStyle = darkMap ? "#171c24" : "#fff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.globalAlpha = +$("#mapOpacity").value / 100;
-  if (darkMap) ctx.filter = "invert(1) hue-rotate(180deg)";
+  if (darkMap) ctx.filter = "grayscale(1) contrast(2) brightness(1.3)";
   const tiles = [...element.querySelectorAll(".leaflet-tile-pane img")];
   await Promise.all(
     tiles

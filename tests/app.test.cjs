@@ -144,3 +144,35 @@ test("typing at table edges grows a blank row and column without replacing the f
     h.dom.window.close();
   }
 });
+test("CSV upload replaces the table and remains undoable", async () => {
+  const h = app();
+  try {
+    h.doc.querySelector("#sample").click();
+    const input = h.doc.querySelector("#uploadFile");
+    const target = {
+      files: [
+        { text: async () => '\uFEFFCategory,Value\n"Advice, support",42' },
+      ],
+      value: "sample.csv",
+    };
+    await input.onchange({ target });
+    assert.equal(
+      h.doc.querySelector('[data-r="1"][data-c="0"]').textContent,
+      "Advice, support",
+    );
+    assert.equal(
+      h.doc.querySelector('[data-r="1"][data-c="1"]').textContent,
+      "42",
+    );
+    h.doc.dispatchEvent(
+      new h.w.KeyboardEvent("keydown", { key: "z", ctrlKey: true }),
+    );
+    assert.equal(
+      h.doc.querySelector('[data-r="1"][data-c="0"]').textContent,
+      "Website",
+    );
+    assert.equal(target.value, "");
+  } finally {
+    h.dom.window.close();
+  }
+});
