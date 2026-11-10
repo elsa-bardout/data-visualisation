@@ -2,3 +2,4 @@ node_modules/
 .pnpm-store/
 .review-tools/
 test-results/
+__pycache__/

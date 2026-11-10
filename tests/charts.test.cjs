@@ -248,6 +248,118 @@ function mapFunction(name) {
       .body.find((n) => n.type === "FunctionDeclaration" && n.id.name === name);
   return s.slice(n.start, n.end);
 }
+
+test("US state sample resolves all 50 states and DC from bundled geometry", async () => {
+  const rows = utils.parseDelimited(
+    fs.readFileSync("assets/samples/abortion-policies.csv", "utf8"),
+  );
+  const context = {
+    norm: (s) =>
+      String(s || "")
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, ""),
+    fetchJSONResponse: async (path) => ({
+      json: async () =>
+        JSON.parse(fs.readFileSync(path.replace("../", ""), "utf8")),
+    }),
+  };
+  vm.createContext(context);
+  vm.runInContext(mapFunction("prepare"), context);
+  const result = await context.prepare({
+    geo: "state",
+    I: { state: 0 },
+    d: rows.slice(1),
+  });
+  assert.equal(result.gj.features.length, 51);
+  assert.equal(result.missing.length, 0);
+  assert.equal(new Set(rows.slice(1).map((r) => r[0])).size, 51);
+  assert.equal(rows.slice(1).filter((r) => r[1] === "Total ban").length, 13);
+});
+
+test("Camden sample resolves mixed ward and full-address rows without discarding either layer", async () => {
+  const rows = utils.parseDelimited(
+    fs.readFileSync("assets/samples/camden-libraries.csv", "utf8"),
+  );
+  const context = {
+    clean: (x) => String(x || "").trim(),
+    norm: (x) => String(x || "").toUpperCase(),
+    fetchArea: async (p) => ({
+      kind: "area",
+      p,
+      missing: [],
+      gj: { features: p.d },
+    }),
+    geocodeRows: async (p, ni) => ({
+      kind: "points",
+      p,
+      coords: p.d.map((r) => ({ r, lat: 51.5, lon: -0.1 })),
+      missing: [],
+    }),
+  };
+  vm.createContext(context);
+  vm.runInContext(mapFunction("prepare"), context);
+  const result = await context.prepare({
+    geo: "ward",
+    I: {
+      ward: 0,
+      council: 1,
+      address: 2,
+      wardcode: -1,
+      councilcode: -1,
+      postcode: -1,
+    },
+    d: rows.slice(1),
+  });
+  assert.equal(result.gj.features.length, 20);
+  assert.equal(result.points.coords.length, 12);
+  assert.equal(result.missing.length, 0);
+  assert.equal(
+    new Set(
+      rows
+        .slice(1)
+        .filter((r) => r[0])
+        .map((r) => r[4]),
+    ).size,
+    5,
+  );
+});
+
+test("sample totals, geography codes and growth derivation stay consistent", () => {
+  const csv = (id) =>
+    utils
+      .parseDelimited(fs.readFileSync(`assets/samples/${id}.csv`, "utf8"))
+      .slice(1);
+  const flow = csv("homelessness-flows"),
+    incoming = new Map(),
+    outgoing = new Map();
+  for (const [a, b, v] of flow) {
+    incoming.set(b, (incoming.get(b) || 0) + +v);
+    outgoing.set(a, (outgoing.get(a) || 0) + +v);
+  }
+  for (const [node, value] of incoming)
+    if (outgoing.has(node)) assert.equal(outgoing.get(node), value, node);
+  assert.equal(
+    csv("child-death-causes").reduce((s, r) => s + +r[1], 0),
+    100,
+  );
+  assert.ok(
+    Math.abs(
+      csv("uk-emissions").reduce((s, r) => s + +r[1], 0) - 373.400251224,
+    ) < 0.0001,
+  );
+  const areas = csv("housing-authorities");
+  assert.equal(new Set(areas.map((r) => r[0])).size, 25);
+  for (const r of areas) assert.match(r[0], /^E0[6789]\d{6}$/);
+  assert.equal(areas[0][1], "Kensington and Chelsea");
+  assert.equal(+areas[0][2], 21.49);
+  for (const r of csv("growth-carbon"))
+    assert.ok(
+      Number.isFinite(+r[2]) &&
+        Number.isFinite(+r[3]) &&
+        +r[2] > -100 &&
+        +r[3] > -100,
+    );
+});
 test("ward lookup can replace ambiguous feature collection without const reassignment", async () => {
   const feature = { properties: { WD25NM: "Test" }, geometry: {} },
     context = {
@@ -577,7 +689,7 @@ test("Camden samples use the reference neighbourhoods and add clearly fictional 
   assert.match(samples.map[0][6], /illustrative/);
   assert.ok(+find("Belsize")[6] > 0);
 });
-test("curated sample catalog renders every non-map dataset with source columns", () => {
+test("static sample catalog renders every non-map dataset with one external source record", () => {
   vm.runInNewContext(
     fs.readFileSync("assets/sample-sets.js", "utf8"),
     samplesContext,
@@ -585,13 +697,17 @@ test("curated sample catalog renders every non-map dataset with source columns",
   for (const [name, sets] of Object.entries(
     samplesContext.window.chartSampleSets,
   )) {
-    assert.ok(sets.length >= 3 && sets.length <= 5);
+    assert.equal(sets.length, name === "map" ? 6 : 5);
     for (const set of sets) {
-      assert.ok(set.rows[0].includes("Source URL"), set.title);
+      assert.match(set.url, /^https:\/\//);
+      assert.ok(set.reference && set.notes);
+      const rows = utils.parseDelimited(fs.readFileSync(set.csv, "utf8"));
+      assert.ok(!rows[0].some((h) => /source.*url/i.test(h)), set.title);
+      assert.ok(rows.length > 2, set.title);
       if (name === "map") continue;
       const h = harness(name);
       try {
-        h.w.chartBridge.setData(set.rows);
+        h.w.chartBridge.setData(rows);
         assert.ok(
           h.w.document.querySelectorAll("#svg path,#svg rect,#svg circle")
             .length >= 2,

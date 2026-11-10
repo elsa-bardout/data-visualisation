@@ -1,0 +1,11 @@
+Source,Target,Value
+Assessed households,Prevention duty,108300
+Assessed households,Relief duty,134820
+Prevention duty,Accommodation secured after prevention,65260
+Prevention duty,Other prevention outcomes,25590
+Prevention duty,Relief duty,17450
+Relief duty,Accommodation secured after relief,63890
+Relief duty,Other relief outcomes,33440
+Relief duty,Main duty decision,54940
+Main duty decision,Main duty accepted,34590
+Main duty decision,Main duty not owed,20350

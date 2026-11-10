@@ -8,11 +8,11 @@ Choose an icon in the floating toolbar, then paste a spreadsheet range or try th
 
 The table automatically grows an empty row and column as you type or paste. The bin resets data and charts; Ctrl/Cmd+Z undoes data edits, samples and resets (Shift+Ctrl/Cmd+Z redoes). The source table stays in place when switching charts. Chart settings and data stay in memory for the current page session.
 
-The sample button cycles through 3–4 sourced datasets for each chart. See [SOURCES.md](SOURCES.md) for provenance, units, derivations and supported input formats.
+The sample button cycles through five sourced stories per chart, plus a sixth Camden map example. The 31 small CSVs are bundled locally in `assets/samples/`; source links, reference dates and scope appear below the table, not in every data row. Editing or uploading data clears the sample attribution; Undo restores it. See [SOURCES.md](SOURCES.md) for provenance, units and derivations.
 
 Charts support SVG, PNG, and standalone HTML exports. HTML snapshots retain the title, colour key, tooltips, hover emphasis and period slider. Map HTML is a presentation view without editing controls; it embeds resolved geographic data but still needs online Leaflet resources and basemap tiles. Map SVG keeps shapes and labels editable and embeds the basemap as a separate raster layer. PNG uses the same composition. Basemap inclusion needs loaded tiles whose provider permits cross-origin capture.
 
-The Camden sample uses real wards, the supplied neighbourhood groups and library postcodes. Outline, label, area and pin colours can be edited independently. Fixed-size inside labels are fitted to the projected shapes; labels that cannot fit use outside callouts. Map opacity starts at 50%. The dark-map toggle uses a dark basemap with light roads.
+The Camden sample keeps the twenty wards and supplied five neighbourhood groups, with full addresses for nine council libraries and three public community libraries. It contains no invented population or activity values. Country and US-state examples use bundled Natural Earth boundaries. Outline, label, area and pin colours can be edited independently. Fixed-size inside labels are fitted to the projected shapes; labels that cannot fit use outside callouts. Map opacity starts at 50%. The dark-map toggle uses a dark basemap with light roads.
 
 Map lookups send geographic fields to Postcodes.io or Esri. Ambiguous wards require a council hint or a ward code; unmatched locations are reported. Coordinates can be used without geocoding. All other data processing occurs in the browser. Third-party chart libraries and tiles require internet access.
 

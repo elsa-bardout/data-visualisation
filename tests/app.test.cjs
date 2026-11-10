@@ -214,3 +214,70 @@ test("curated samples cycle and wrap independently without generating a title", 
     h.dom.window.close();
   }
 });
+
+test("CSV samples keep one source line, clear it on edits, and restore it with Undo", async () => {
+  const h = app();
+  try {
+    h.w.chartSampleSets = {
+      sankey: [
+        {
+          title: "A sourced story",
+          csv: "assets/samples/example.csv",
+          source: "Official source",
+          url: "https://example.org/data",
+          reference: "2024",
+          notes: "Counts, not rates",
+        },
+      ],
+    };
+    h.w.fetch = async () => ({
+      ok: true,
+      text: async () => "Source,Target,Value\nA,B,10",
+    });
+    await h.doc.querySelector("#sample").onclick();
+    const source = h.doc.querySelector("#sampleSource");
+    assert.equal(source.querySelectorAll("a").length, 1);
+    assert.match(source.textContent, /Official source/);
+    const cell = h.doc.querySelector('[data-r="1"][data-c="2"]');
+    cell.focus();
+    cell.textContent = "20";
+    cell.dispatchEvent(new h.w.Event("input"));
+    cell.blur();
+    assert.equal(source.hidden, true);
+    h.doc.dispatchEvent(
+      new h.w.KeyboardEvent("keydown", { key: "z", ctrlKey: true }),
+    );
+    assert.equal(source.hidden, false);
+    assert.equal(
+      h.doc.querySelector('[data-r="1"][data-c="2"]').textContent,
+      "10",
+    );
+  } finally {
+    h.dom.window.close();
+  }
+});
+
+test("a late sample download cannot overwrite an edit or reset", async () => {
+  const h = app();
+  try {
+    h.w.chartSampleSets = {
+      sankey: [{ csv: "assets/samples/slow.csv", title: "Slow" }],
+    };
+    let finish;
+    h.w.fetch = () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      });
+    const pending = h.doc.querySelector("#sample").onclick();
+    h.doc.querySelector("#clear").click();
+    finish({ ok: true, text: async () => "Source,Target,Value\nA,B,10" });
+    await pending;
+    assert.equal(
+      h.doc.querySelector('[data-r="1"][data-c="0"]').textContent,
+      "",
+    );
+    assert.equal(h.doc.querySelector("#sampleSource").hidden, true);
+  } finally {
+    h.dom.window.close();
+  }
+});

@@ -1,0 +1,165 @@
+Country,Name,Value
+AFG,Afghanistan,70
+ALB,Albania,11
+DZA,Algeria,0
+AGO,Angola,44
+ARG,Argentina,0
+ARM,Armenia,1
+AUS,Australia,0
+AUT,Austria,4
+AZE,Azerbaijan,1
+BHS,Bahamas,0
+BGD,Bangladesh,71
+BLR,Belarus,0
+BEL,Belgium,0
+BLZ,Belize,11
+BEN,Benin,92
+BTN,Bhutan,7
+BOL,Bolivia,9
+BIH,Bosnia and Herzegovina,35
+BWA,Botswana,29
+BRA,Brazil,2
+BRN,Brunei,0
+BGR,Bulgaria,2
+BFA,Burkina Faso,82
+BDI,Burundi,100
+KHM,Cambodia,43
+CMR,Cameroon,68
+CAN,Canada,0
+CAF,Central African Republic,99
+TCD,Chad,89
+CHL,Chile,4
+CHN,China,10
+COL,Colombia,7
+COG,Congo,60
+CRI,Costa Rica,3
+CIV,Cote d'Ivoire,52
+HRV,Croatia,3
+CUB,Cuba,4
+CYP,Cyprus,1
+CZE,Czechia,1
+COD,Democratic Republic of Congo,95
+DNK,Denmark,0
+DJI,Djibouti,54
+DOM,Dominican Republic,7
+TLS,East Timor,81
+ECU,Ecuador,5
+EGY,Egypt,0
+SLV,El Salvador,5
+GNQ,Equatorial Guinea,50
+ERI,Eritrea,79
+EST,Estonia,4
+SWZ,Eswatini,44
+ETH,Ethiopia,93
+FJI,Fiji,39
+FIN,Finland,0
+FRA,France,0
+GAB,Gabon,7
+GMB,Gambia,97
+GEO,Georgia,5
+DEU,Germany,0
+GHA,Ghana,65
+GRC,Greece,0
+GTM,Guatemala,49
+GIN,Guinea,98
+GNB,Guinea-Bissau,98
+GUY,Guyana,27
+HTI,Haiti,94
+HND,Honduras,43
+HUN,Hungary,1
+ISL,Iceland,0
+IND,India,19
+IDN,Indonesia,10
+IRN,Iran,1
+IRQ,Iraq,1
+IRL,Ireland,0
+ISR,Israel,0
+ITA,Italy,1
+JAM,Jamaica,7
+JPN,Japan,0
+JOR,Jordan,0
+KAZ,Kazakhstan,4
+KEN,Kenya,68
+KWT,Kuwait,0
+KGZ,Kyrgyzstan,18
+LAO,Laos,90
+LVA,Latvia,8
+LBN,Lebanon,10
+LSO,Lesotho,42
+LBR,Liberia,99
+LBY,Libya,5
+LTU,Lithuania,1
+LUX,Luxembourg,0
+MDG,Madagascar,98
+MWI,Malawi,98
+MYS,Malaysia,0
+MLI,Mali,98
+MRT,Mauritania,44
+MEX,Mexico,12
+MDA,Moldova,2
+MNG,Mongolia,41
+MNE,Montenegro,27
+MAR,Morocco,3
+MOZ,Mozambique,92
+MMR,Myanmar,54
+NAM,Namibia,54
+NPL,Nepal,55
+NLD,Netherlands,0
+NZL,New Zealand,1
+NIC,Nicaragua,37
+NER,Niger,94
+NGA,Nigeria,72
+PRK,North Korea,78
+MKD,North Macedonia,13
+NOR,Norway,0
+OMN,Oman,0
+PAK,Pakistan,49
+PAN,Panama,6
+PNG,Papua New Guinea,88
+PRY,Paraguay,24
+PER,Peru,7
+PHL,Philippines,36
+POL,Poland,2
+PRT,Portugal,1
+QAT,Qatar,0
+ROU,Romania,4
+RUS,Russia,0
+RWA,Rwanda,91
+SAU,Saudi Arabia,0
+SEN,Senegal,61
+SRB,Serbia,11
+SLE,Sierra Leone,98
+SVK,Slovakia,1
+SVN,Slovenia,2
+SLB,Solomon Islands,86
+SOM,Somalia,95
+ZAF,South Africa,10
+KOR,South Korea,0
+ESP,Spain,3
+LKA,Sri Lanka,69
+SDN,Sudan,53
+SUR,Suriname,5
+SWE,Sweden,0
+CHE,Switzerland,0
+SYR,Syria,4
+TJK,Tajikistan,12
+TZA,Tanzania,89
+THA,Thailand,12
+TGO,Togo,85
+TTO,Trinidad and Tobago,0
+TUN,Tunisia,0
+TUR,Turkey,2
+TKM,Turkmenistan,0
+UGA,Uganda,98
+UKR,Ukraine,3
+ARE,United Arab Emirates,1
+GBR,United Kingdom,0
+USA,United States,0
+URY,Uruguay,1
+UZB,Uzbekistan,6
+VUT,Vanuatu,80
+VEN,Venezuela,8
+VNM,Vietnam,9
+YEM,Yemen,53
+ZMB,Zambia,90
+ZWE,Zimbabwe,63

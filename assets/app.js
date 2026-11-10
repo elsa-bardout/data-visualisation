@@ -5,6 +5,8 @@
   const examples = window.chartSamples;
   const sampleIndex = {};
   let data = [Array(4).fill("")],
+    sampleSource = null,
+    sampleRequest = 0,
     mode = "sankey",
     states = {},
     undo = [],
@@ -35,6 +37,7 @@
     return {
       version: 1,
       data: copy(data),
+      sampleSource: copy(sampleSource),
       mode,
       states: copy(states),
     };
@@ -126,6 +129,9 @@
       }
     };
     td.oninput = () => {
+      sampleRequest++;
+      sampleSource = null;
+      renderSource();
       data[r][c] = td.textContent;
       growGrid();
       clearTimeout(renderTimer);
@@ -145,6 +151,8 @@
         )
           throw Error("Limit: 10,000 rows and 100 columns.");
         checkpoint();
+        sampleRequest++;
+        sampleSource = null;
         while (data.length < r + incoming.length) data.push([]);
         incoming.forEach((row, i) =>
           row.forEach((v, j) => (data[r + i][c + j] = v)),
@@ -171,6 +179,8 @@
       ) {
         e.preventDefault();
         checkpoint();
+        sampleRequest++;
+        sampleSource = null;
         for (
           let i = Math.min(selection.start.r, selection.end.r);
           i <= Math.max(selection.start.r, selection.end.r);
@@ -312,14 +322,46 @@
     $("#diagnostics").textContent = issues.join(" ");
   }
   function push() {
+    renderSource();
     const table = copy(data);
     diagnostics(table);
     const b = frames[mode].contentWindow?.chartBridge;
     if (!b) return;
     try {
+      frames[mode].contentWindow.sampleAttribution = copy(sampleSource);
       b.setData(table);
     } catch (e) {
       notice("Chart could not be built: " + e.message);
+    }
+  }
+  function renderSource() {
+    const box = $("#sampleSource");
+    box.replaceChildren();
+    box.hidden = !sampleSource;
+    if (!sampleSource) return;
+    const title = document.createElement("strong");
+    title.textContent = sampleSource.title;
+    box.append(title);
+    const line = document.createElement("p");
+    line.append((sampleSource.reference || "") + " · Source: ");
+    for (const [i, source] of [
+      { label: sampleSource.source, url: sampleSource.url },
+      ...(sampleSource.extraSources || []),
+    ].entries()) {
+      if (!source.url) continue;
+      if (i) line.append(" · ");
+      const a = document.createElement("a");
+      a.textContent = source.label;
+      a.href = source.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      line.append(a);
+    }
+    box.append(line);
+    if (sampleSource.notes) {
+      const note = document.createElement("p");
+      note.textContent = sampleSource.notes;
+      box.append(note);
     }
   }
   function activate(next) {
@@ -394,6 +436,8 @@
   function restore(p) {
     ChartUtils.validateProject(p);
     data = copy(p.data);
+    sampleRequest++;
+    sampleSource = copy(p.sampleSource || null);
     mode = p.mode;
 
     states = copy(p.states || {});
@@ -447,6 +491,8 @@
         throw new Error("empty");
       checkpoint();
       data = incoming;
+      sampleRequest++;
+      sampleSource = null;
       selection = null;
       renderGrid();
       push();
@@ -459,13 +505,29 @@
       event.target.value = "";
     }
   };
-  $("#sample").onclick = () => {
-    checkpoint();
+  $("#sample").onclick = async () => {
+    const request = ++sampleRequest,
+      requestedMode = mode;
     const sets = window.chartSampleSets?.[mode];
     const index = sampleIndex[mode] || 0;
     const selected = sets?.[index % sets.length];
+    let incoming;
+    try {
+      if (selected?.csv) {
+        const response = await fetch(selected.csv);
+        if (!response.ok) throw Error("Sample unavailable");
+        incoming = ChartUtils.parseDelimited(await response.text());
+      } else incoming = copy(selected?.rows || examples[mode]);
+    } catch {
+      if (request === sampleRequest)
+        notice("This sample could not load. Please try again.");
+      return;
+    }
+    if (request !== sampleRequest || requestedMode !== mode) return;
+    checkpoint();
     sampleIndex[mode] = index + 1;
-    data = copy(selected?.rows || examples[mode]);
+    data = incoming;
+    sampleSource = selected ? copy(selected) : null;
     frames[mode].contentWindow?.chartBridge?.resetAll();
     delete states[mode];
 
@@ -475,6 +537,8 @@
     push();
 
     if (selected) {
+      if (selected.preset)
+        frames[mode].contentWindow?.chartBridge?.setState(selected.preset);
       notice(
         "Sample " +
           ((index % sets.length) + 1) +
@@ -482,12 +546,14 @@
           sets.length +
           ": " +
           selected.title +
-          ". Click Try sample data again for another. Sources are in the table.",
+          ". Click Try sample data again for another. Source links are below the table.",
       );
     } else notice("Sample loaded. Undo restores your previous data.");
   };
   $("#clear").onclick = () => {
     checkpoint();
+    sampleRequest++;
+    sampleSource = null;
     data = [Array(4).fill("")];
 
     states = {};

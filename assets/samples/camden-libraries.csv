@@ -1,0 +1,33 @@
+Ward,Council,Address,Name,Category,Library type
+Camden Town,Camden,,Camden Town,Central,
+Primrose Hill,Camden,,Primrose Hill,Central,
+Regent's Park,Camden,,Regent's Park,Central,
+St Pancras & Somers Town,Camden,,St Pancras & Somers Town,Central,
+Fortune Green,Camden,,Fortune Green,West,
+West Hampstead,Camden,,West Hampstead,West,
+South Hampstead,Camden,,South Hampstead,West,
+Kilburn,Camden,,Kilburn,West,
+Gospel Oak,Camden,,Gospel Oak,East,
+Haverstock,Camden,,Haverstock,East,
+Kentish Town North,Camden,,Kentish Town North,East,
+Kentish Town South,Camden,,Kentish Town South,East,
+Camden Square,Camden,,Camden Square,East,
+King's Cross,Camden,,King's Cross,South,
+Bloomsbury,Camden,,Bloomsbury,South,
+Holborn & Covent Garden,Camden,,Holborn & Covent Garden,South,
+Belsize,Camden,,Belsize,North,
+Frognal,Camden,,Frognal,North,
+Hampstead Town,Camden,,Hampstead Town,North,
+Highgate,Camden,,Highgate,North,
+,Camden,"218 Eversholt Street, London NW1 1BD",Camden Town Library,Library,Council-run
+,Camden,"Chester Road, London N19 5DH",Highgate Library,Library,Council-run
+,Camden,"32–38 Theobalds Road, London WC1X 8PA",Holborn Library,Library,Council-run
+,Camden,"262–266 Kentish Town Road, London NW5 2AA",Kentish Town Library,Library,Council-run
+,Camden,"12–22 Kilburn High Road, London NW6 5UH",Kilburn Library,Library,Council-run
+,Camden,"5 Pancras Square, London N1C 4AG",Pancras Square Library,Library,Council-run
+,Camden,"165 Queen’s Crescent, London NW5 4HH",Queen’s Crescent Library,Library,Council-run
+,Camden,"88 Avenue Road, London NW3 3HA",Swiss Cottage Library,Library,Council-run
+,Camden,"Dennington Park Road, London NW6 1AU",West Hampstead Library,Library,Council-run
+,Camden,"11–16 Sharples Hall Street, London NW1 8YN",Primrose Hill Community Library,Library,Community-run
+,Camden,"Antrim Road, London NW3 4XN",Belsize Community Library,Library,Community-run
+,Camden,"10 Keats Grove, London NW3 2RR",Keats Community Library,Library,Community-run

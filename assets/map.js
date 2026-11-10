@@ -59,6 +59,7 @@ const $ = (s) => document.querySelector(s),
 const alias = {
   address: ["ADDRESS", "FULLADDRESS", "STREETADDRESS", "ADDRESSLINE1"],
   country: ["COUNTRY", "COUNTRYNAME"],
+  state: ["STATE", "STATENAME", "USSTATE"],
   postcode: ["POSTCODE", "POSTCODEAREA", "POSTALCODE", "ZIP", "ZIPCODE"],
   lat: ["LAT", "LATITUDE"],
   lon: ["LON", "LNG", "LONGITUDE"],
@@ -178,18 +179,18 @@ function parse() {
       Object.entries(alias).map(([k, a]) => [k, idx(h, a)]),
     ),
     geo =
-      I.address >= 0
-        ? "address"
-        : I.lat >= 0 && I.lon >= 0
-          ? "coords"
-          : I.ward >= 0 || I.wardcode >= 0
-            ? "ward"
-            : I.council >= 0 || I.councilcode >= 0
-              ? "council"
-              : I.postcode >= 0
-                ? "postcode"
-                : I.lat >= 0 && I.lon >= 0
-                  ? "coords"
+      I.ward >= 0 || I.wardcode >= 0
+        ? "ward"
+        : I.state >= 0
+          ? "state"
+          : I.address >= 0
+            ? "address"
+            : I.lat >= 0 && I.lon >= 0
+              ? "coords"
+              : I.council >= 0 || I.councilcode >= 0
+                ? "council"
+                : I.postcode >= 0
+                  ? "postcode"
                   : I.neighbourhood >= 0 || I.location >= 0
                     ? "location"
                     : I.country >= 0
@@ -948,10 +949,12 @@ async function geocodeRows(p, ni) {
   return coords.length ? { kind: "points", p, coords, missing } : null;
 }
 async function prepare(p) {
-  if (p.geo === "country") {
-    const gj = await fetchJSONResponse("../assets/countries.geojson").then(
-      (r) => r.json(),
-    );
+  if (p.geo === "country" || p.geo === "state") {
+    const isState = p.geo === "state",
+      ni = isState ? p.I.state : p.I.country;
+    const gj = await fetchJSONResponse(
+      isState ? "../assets/us-states.geojson" : "../assets/countries.geojson",
+    ).then((r) => r.json());
     const aliases = {
       UK: "UNITEDKINGDOM",
       GB: "UNITEDKINGDOM",
@@ -963,7 +966,7 @@ async function prepare(p) {
       features = [],
       missing = [];
     for (const row of p.d) {
-      const name = key(row[p.I.country]);
+      const name = key(row[ni]);
       const f = gj.features.find((f) =>
         [f.properties.NAME, f.properties.ISO2, f.properties.ISO3].some(
           (v) => key(v) === name,
@@ -972,7 +975,7 @@ async function prepare(p) {
       if (f) {
         features.push(f);
         rowMap.set(norm(f.properties.NAME), row);
-      } else missing.push(row[p.I.country]);
+      } else missing.push(row[ni]);
     }
     if (!features.length)
       throw Error(
@@ -984,7 +987,7 @@ async function prepare(p) {
       gj: { type: "FeatureCollection", features },
       rowMap,
       field: "NAME",
-      ni: p.I.country,
+      ni,
       missing,
     };
   }
@@ -998,7 +1001,12 @@ async function prepare(p) {
   }
   // A table may contain ward boundaries and postcode pins. Resolve both sets;
   // neither a postcode column nor blank ward cells should discard the other.
-  if (["ward", "council"].includes(p.geo) && p.I.postcode >= 0) {
+  if (
+    ["ward", "council"].includes(p.geo) &&
+    (p.I.postcode >= 0 || p.I.address >= 0)
+  ) {
+    const pinIndex = p.I.address >= 0 ? p.I.address : p.I.postcode;
+    const pinGeo = p.I.address >= 0 ? "address" : "postcode";
     const ni =
       p.geo === "ward"
         ? p.I.wardcode >= 0
@@ -1008,15 +1016,15 @@ async function prepare(p) {
           ? p.I.councilcode
           : p.I.council;
     const areaRows = p.d.filter(
-      (r) => clean(r[ni]) && (p.geo === "ward" || !clean(r[p.I.postcode])),
+      (r) => clean(r[ni]) && (p.geo === "ward" || !clean(r[pinIndex])),
     );
-    const pinRows = p.d.filter((r) => clean(r[p.I.postcode]));
+    const pinRows = p.d.filter((r) => clean(r[pinIndex]));
     if (pinRows.length) {
       const [areaResult, pinResult] = await Promise.allSettled([
         areaRows.length
           ? fetchArea({ ...p, d: areaRows }, p.geo, ni)
           : Promise.resolve(null),
-        prepare({ ...p, geo: "postcode", d: pinRows }),
+        prepare({ ...p, geo: pinGeo, d: pinRows }),
       ]);
       const area = areaResult.status === "fulfilled" ? areaResult.value : null;
       const points = pinResult.status === "fulfilled" ? pinResult.value : null;
@@ -1029,7 +1037,7 @@ async function prepare(p) {
       result.missing.push(
         ...pinRows
           .filter((r) => !points?.coords.some((x) => x.r === r))
-          .map((r) => clean(r[p.I.postcode])),
+          .map((r) => clean(r[pinIndex])),
       );
       if (area && points) area.points = points;
       return result;
@@ -1470,6 +1478,27 @@ async function exportCanvas() {
 }
 async function interactiveHtml() {
   const root = document.documentElement.cloneNode(true);
+  if (window.sampleAttribution) {
+    const citation = document.createElement("p");
+    citation.style.cssText =
+      "margin:12px 20px;font-size:12px;color:#617084;line-height:1.5";
+    const source = window.sampleAttribution;
+    citation.append(source.title + " · " + source.reference + " · ");
+    for (const item of [
+      { label: source.source, url: source.url },
+      ...(source.extraSources || []),
+    ]) {
+      if (!/^https:\/\//.test(item.url || "")) continue;
+      const a = document.createElement("a");
+      a.href = item.url;
+      a.textContent = item.label;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      citation.append(a, " ");
+    }
+    citation.append(document.createElement("br"), source.notes);
+    root.querySelector(".card").append(citation);
+  }
   root.dataset.export = "readonly";
   root.querySelector("#map").innerHTML = "";
   root.querySelector("#map").className = "map";
@@ -1577,7 +1606,9 @@ function mapVectorSVG(basemap = "") {
       W +
       " " +
       (H + 125) +
-      '"><rect width="100%" height="100%" fill="white"/><text x="20" y="28" font-family="system-ui" font-size="20" font-weight="700">' +
+      '"><metadata>' +
+      esc(JSON.stringify(window.sampleAttribution || {})) +
+      '</metadata><rect width="100%" height="100%" fill="white"/><text x="20" y="28" font-family="system-ui" font-size="20" font-weight="700">' +
       esc($("#title").value) +
       '</text><defs><clipPath id="mapclip"><rect width="' +
       W +

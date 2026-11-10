@@ -385,3 +385,20 @@ a:focus-visible,
   color: inherit;
   text-underline-offset: 2px;
 }
+.sampleSource {
+  margin: 0 20px 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #617084;
+}
+.sampleSource p {
+  margin: 3px 0;
+}
+.sampleSource a {
+  color: inherit;
+  text-underline-offset: 2px;
+}
+.sampleSource strong {
+  color: #172b3f;
+  font-weight: 600;
+}

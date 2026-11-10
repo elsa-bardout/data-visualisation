@@ -53,8 +53,17 @@
     svg
       .querySelectorAll(".dragPreview,.dragDot,.dropPreview")
       .forEach((n) => n.remove());
+    if (window.sampleAttribution) {
+      const metadata = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "metadata",
+      );
+      metadata.textContent = JSON.stringify(window.sampleAttribution);
+      svg.prepend(metadata);
+    }
     return {
       label,
+      source: window.sampleAttribution || null,
       svg: new XMLSerializer().serializeToString(svg),
       title: document.querySelector("#diagramTitle")?.value || "",
       legend: [...document.querySelectorAll("#legend label")].map((n) => ({
@@ -77,6 +86,33 @@
       document.querySelector("main").innerHTML = f.svg;
       document.querySelector("h1").textContent = f.title || data.title;
       document.querySelector("output").textContent = f.label;
+      let citation = document.querySelector(".sample-citation");
+      if (!citation) {
+        citation = document.createElement("p");
+        citation.className = "sample-citation";
+        citation.style.cssText =
+          "margin:0 20px 18px;font-size:12px;color:#617084;line-height:1.5";
+        document.querySelector(".card").append(citation);
+      }
+      citation.replaceChildren();
+      if (f.source) {
+        citation.append(f.source.title + " · " + f.source.reference + " · ");
+        for (const source of [
+          { label: f.source.source, url: f.source.url },
+          ...(f.source.extraSources || []),
+        ]) {
+          if (!/^https:\/\//.test(source.url || "")) continue;
+          const a = document.createElement("a");
+          a.textContent = source.label;
+          a.href = source.url;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          a.style.color = "inherit";
+          citation.append(a, " ");
+        }
+        citation.append(document.createElement("br"), f.source.notes);
+      }
+      citation.hidden = !f.source;
       const legend = document.querySelector(".legend");
       legend.replaceChildren();
       (Array.isArray(f.legend) ? f.legend : []).forEach((item) => {

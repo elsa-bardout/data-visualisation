@@ -1,0 +1,30 @@
+Source,Target,Value
+"Agriculture, forestry and fishing",Carbon dioxide,9529.0
+Mining and quarrying,Carbon dioxide,13582.4
+Manufacturing,Carbon dioxide,62745.2
+Electricity and gas,Carbon dioxide,67075.9
+"Water, sewerage and waste",Carbon dioxide,3705.6
+Transport and storage,Carbon dioxide,76097.6
+"Agriculture, forestry and fishing",Methane,26731.7
+Mining and quarrying,Methane,1424.0
+Manufacturing,Methane,179.4
+Electricity and gas,Methane,3368.5
+"Water, sewerage and waste",Methane,16242.1
+Transport and storage,Methane,260.6
+"Agriculture, forestry and fishing",Nitrous oxide,12016.5
+Mining and quarrying,Nitrous oxide,221.5
+Manufacturing,Nitrous oxide,377.5
+Electricity and gas,Nitrous oxide,403.5
+"Water, sewerage and waste",Nitrous oxide,4711.0
+Transport and storage,Nitrous oxide,717.9
+"Agriculture, forestry and fishing",HFC,11.9
+Mining and quarrying,HFC,2.3
+Manufacturing,HFC,564.1
+Electricity and gas,HFC,2.7
+"Water, sewerage and waste",HFC,2102.8
+Transport and storage,HFC,732.9
+Manufacturing,PFC,135.0
+Manufacturing,SF6,74.7
+Electricity and gas,SF6,182.4
+"Water, sewerage and waste",SF6,14.8
+Manufacturing,NF3,0.1
