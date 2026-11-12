@@ -4,6 +4,14 @@
   const bridge = window.chartBridge;
   if (!bridge) return;
   const titleInput = document.querySelector("#diagramTitle,#title");
+  const sampleInfo = document.createElement("p");
+  sampleInfo.className = "sample-context";
+  sampleInfo.hidden = true;
+  titleInput?.parentElement.append(sampleInfo);
+  bridge.setSampleInfo = (source) => {
+    sampleInfo.textContent = source?.reference || "";
+    sampleInfo.hidden = !sampleInfo.textContent;
+  };
   if (titleInput && !titleInput.closest(".title-editor")) {
     const wrap = document.createElement("div");
     wrap.className = "title-editor";

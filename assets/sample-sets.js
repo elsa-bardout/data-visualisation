@@ -6,10 +6,17 @@ window.chartSampleSets = {
       title: "Where do refugees go?",
       csv: "assets/samples/refugees.csv",
       source: "UNHCR",
-      url: "https://refugeedata.unhcr.org/data-finder/",
-      reference: "End of 2024 · people",
+      url: "https://refugeedata.unhcr.org/en/documentation/data-coverage/metadata-catalog/PopStatsOfficial/",
+      reference:
+        "End of 2024 · 30,958,200 refugees · all reported routes, grouped by region",
       notes:
-        "Selected routes from Afghanistan, Syria and South Sudan to six host countries; refugees under UNHCR’s mandate, not all displaced people. Missing routes are not assumed to be zero.",
+        "Complete country-route snapshot aggregated to UNHCR regions for readability, including unspecified origins. All 4,792 country records are available in the linked CSV and reconcile to all 170 asylum-country totals. Refugees under UNHCR’s mandate; excludes UNRWA refugees and other displaced populations. These are resident populations, not movements during the year.",
+      extraSources: [
+        {
+          label: "Complete country-route CSV (4,792 records)",
+          url: "assets/samples/refugees-all-country-routes.csv",
+        },
+      ],
     },
     {
       id: "federal-functions",
@@ -124,6 +131,7 @@ window.chartSampleSets = {
       reference: "Surveys 2016 and 2024 · %",
       notes:
         "Metropolitan France, ages 18–79: at least one reported identity check in the preceding five years. Sex, age and perceived-origin groups overlap; these are not counts of police brutality.",
+      valueLabel: "Reported identity check in preceding five years (%)",
     },
     {
       id: "migration-fiscal",
@@ -144,6 +152,7 @@ window.chartSampleSets = {
       reference: "Snapshot 10 November 2026 · minutes per day",
       notes:
         "Unpaid care and domestic work. Latest available country surveys have different survey years and methods; selected countries, not a same-year ranking. Each bar is one sex’s average; women and men are not added together.",
+      valueLabel: "Unpaid work (minutes per day)",
       preset: {
         settings: {
           orientation: "horizontal",
@@ -175,6 +184,7 @@ window.chartSampleSets = {
       reference: "1990–2024 · million tonnes CO₂ equivalent",
       notes:
         "Consistent UK territorial series; excludes international aviation/shipping bunkers. Land-use totals include removals.",
+      valueLabel: "Emissions (million tonnes CO2e)",
     },
     {
       id: "housing-history",
@@ -185,6 +195,7 @@ window.chartSampleSets = {
       reference: "2002–2025 · house-price-to-earnings ratio",
       notes:
         "Existing-dwelling prices / residence-based median annual earnings. Selected regions and Wales.",
+      valueLabel: "Median house-price-to-earnings ratio",
     },
     {
       id: "crime-history",
@@ -195,6 +206,7 @@ window.chartSampleSets = {
       reference: "1981–2026 · estimated incidents, thousands",
       notes:
         "Calendar years before 2002; year ending March thereafter. Adults 16+ / households. Pandemic gap: no comparable 2021–2022 estimates; connecting lines do not supply missing observations. Survey estimates, not police-recorded offences.",
+      valueLabel: "Estimated incidents (thousands)",
     },
     {
       id: "rough-sleeping",
@@ -205,6 +217,7 @@ window.chartSampleSets = {
       reference: "2010–2025 · people",
       notes:
         "Estimated people sleeping rough on one autumn night, not everyone experiencing homelessness. London is included in England.",
+      valueLabel: "People sleeping rough on one night",
     },
     {
       id: "vaccination",
@@ -215,6 +228,7 @@ window.chartSampleSets = {
       reference: "1980–2024 · % of one-year-olds",
       notes:
         "World coverage estimates; these series show programme reach, not a direct estimate of deaths prevented.",
+      valueLabel: "Children vaccinated (%)",
     },
   ],
   scatter: [
@@ -343,7 +357,7 @@ window.chartSampleSets = {
         "Twenty wards in five neighbourhoods, plus nine council libraries and three community libraries open to the public. Pins use full street addresses; no invented activity or population figures.",
       extraSources: [
         {
-          label: "Community libraries",
+          label: "Community libraries (including Keats)",
           url: "https://www.camden.gov.uk/community-libraries",
         },
         {
@@ -353,10 +367,6 @@ window.chartSampleSets = {
         {
           label: "Belsize",
           url: "https://thewinch.org/our-services/belsize-community-library/",
-        },
-        {
-          label: "Keats",
-          url: "https://www.keatscommunitylibrary.org.uk/about.php",
         },
       ],
     },

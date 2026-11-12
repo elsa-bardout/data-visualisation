@@ -8,7 +8,7 @@ Choose an icon in the floating toolbar, then paste a spreadsheet range or try th
 
 The table automatically grows an empty row and column as you type or paste. The bin resets data and charts; Ctrl/Cmd+Z undoes data edits, samples and resets (Shift+Ctrl/Cmd+Z redoes). The source table stays in place when switching charts. Chart settings and data stay in memory for the current page session.
 
-The sample button cycles through five sourced stories per chart, plus a sixth Camden map example. The 31 small CSVs are bundled locally in `assets/samples/`; source links, reference dates and scope appear below the table, not in every data row. Editing or uploading data clears the sample attribution; Undo restores it. See [SOURCES.md](SOURCES.md) for provenance, units and derivations.
+The sample button cycles through five sourced stories per chart, plus a sixth Camden map example. The 31 small CSVs are bundled locally in `assets/samples/`; titles and reference information appear above the chart, while source links and scope share a table footer excluded from chart data. Descriptive column names become chart labels. The refugee sample covers all reported routes by region, with the complete 4,792-record country table linked alongside it. Editing or uploading data clears the sample attribution; Undo restores it. See [SOURCES.md](SOURCES.md) for provenance, units and derivations.
 
 Charts support SVG, PNG, and standalone HTML exports. HTML snapshots retain the title, colour key, tooltips, hover emphasis and period slider. Map HTML is a presentation view without editing controls; it embeds resolved geographic data but still needs online Leaflet resources and basemap tiles. Map SVG keeps shapes and labels editable and embeds the basemap as a separate raster layer. PNG uses the same composition. Basemap inclusion needs loaded tiles whose provider permits cross-origin capture.
 
@@ -49,6 +49,6 @@ pnpm check
 
 The map redesign from `map-redesign` is the baseline for this version. Existing branch history is preserved.
 
-Titles start empty with an “Enter title here” placeholder across all charts. No AI title inference is used.
+Titles start empty with an “Enter title here” placeholder across all charts. Samples supply an editable title; clearing data restores the placeholder. No AI title inference is used. Line endpoints identify their series; donut sections and bars can be dragged to reorder. Sankey routes can skip steps while retaining shared node identities. Map outline thickness and label/outline colours are editable; label text has no blurry halo.
 
 Privacy: data and Undo history live in tab memory; there is no application autosave or full-table upload. Map lookups send location fields to external providers and basemap requests reveal the viewed area. See [privacy details](PRIVACY.html).

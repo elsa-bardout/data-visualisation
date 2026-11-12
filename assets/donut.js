@@ -6,6 +6,7 @@ let M = [Array(5).fill("")],
   titleEdited = false,
   chartType = "donut",
   labelMode = "both";
+let manualOrder = [];
 const $ = (s) => document.querySelector(s),
   S = d3.select("#svg"),
   tip = d3.select("#tip"),
@@ -70,7 +71,16 @@ function getPeriod(j) {
   });
   return [...a]
     .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
+    .sort((a, b) =>
+      manualOrder.length
+        ? (manualOrder.indexOf(a.name) < 0
+            ? Infinity
+            : manualOrder.indexOf(a.name)) -
+            (manualOrder.indexOf(b.name) < 0
+              ? Infinity
+              : manualOrder.indexOf(b.name)) || b.value - a.value
+        : b.value - a.value || a.name.localeCompare(b.name),
+    );
 }
 function build() {
   let u = M.filter((r) => r.some((x) => String(x).trim()));
@@ -269,6 +279,47 @@ function draw(target, D, interactive = false) {
       .append("line")
       .attr("class", "dropPreview")
       .style("display", "none");
+  if (!interactive)
+    paths.style("cursor", "grab").call(
+      d3
+        .drag()
+        .clickDistance(3)
+        .on("start", function (e, d) {
+          dropIndex = data.indexOf(d.data);
+          d3.select(this)
+            .classed("dragging", true)
+            .style("cursor", "grabbing")
+            .attr("stroke", "#172b3f")
+            .attr("stroke-width", 3);
+          tip.style("opacity", 0);
+        })
+        .on("drag", function (e, d) {
+          let angle = Math.atan2(e.x, -e.y);
+          while (angle < -Math.PI / 4) angle += Math.PI * 2;
+          const near =
+            pie.find((p) => angle >= p.startAngle && angle <= p.endAngle) ||
+            pie.at(-1);
+          dropIndex = data.indexOf(near.data);
+          const a =
+            dropIndex > data.indexOf(d.data) ? near.endAngle : near.startAngle;
+          preview
+            .style("display", null)
+            .attr("x1", Math.sin(a) * r * 0.2)
+            .attr("y1", -Math.cos(a) * r * 0.2)
+            .attr("x2", Math.sin(a) * (r + 18))
+            .attr("y2", -Math.cos(a) * (r + 18));
+          paths.style("opacity", (p) => (p === d || p === near ? 1 : 0.35));
+        })
+        .on("end", function (e, d) {
+          preview.style("display", "none");
+          const from = data.indexOf(d.data);
+          if (from >= 0 && dropIndex >= 0 && from !== dropIndex)
+            data.splice(dropIndex, 0, data.splice(from, 1)[0]);
+          manualOrder = data.map((x) => x.name);
+          dropIndex = null;
+          render();
+        }),
+    );
   l.call(
     d3
       .drag()
@@ -303,6 +354,7 @@ function draw(target, D, interactive = false) {
         ) {
           let item = data.splice(from, 1)[0];
           data.splice(dropIndex, 0, item);
+          manualOrder = data.map((x) => x.name);
           render();
         }
         dropIndex = null;
@@ -493,11 +545,14 @@ window.chartSettings = {
       titleEdited: titleEdited,
       chartType: chartType,
       labelMode: labelMode,
+      manualOrder,
       C: C,
     });
   },
   set(s) {
     if (!s || typeof s !== "object") return;
+    if (Array.isArray(s.manualOrder))
+      manualOrder = s.manualOrder.filter((x) => typeof x === "string");
     if (
       typeof s.activePeriod === typeof activePeriod &&
       (typeof s.activePeriod !== "number" || Number.isFinite(s.activePeriod))
@@ -535,6 +590,7 @@ window.chartSettings = {
   },
   reset() {
     M = [[]];
+    manualOrder = [];
     clear();
   },
   sync() {
@@ -557,6 +613,7 @@ window.chartSettings = {
     if (i < 0) return;
     const x = data.splice(i, 1)[0];
     data.splice(j, 0, x);
+    manualOrder = data.map((x) => x.name);
     render();
   },
 };

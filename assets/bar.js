@@ -187,7 +187,24 @@ function parse() {
     si = idx(header, A.series),
     pi = idx(header, A.period),
     coli = idx(header, A.colour);
+  if (ci < 0)
+    ci = header.findIndex(
+      (_, i) =>
+        ![si, pi, coli].includes(i) &&
+        data.some((r) => clean(r[i])) &&
+        !data.some((r) => Number.isFinite(num(r[i]))),
+    );
   if (ci < 0) ci = 0;
+  if (vi < 0) {
+    const numeric = header
+      .map((_, i) => i)
+      .filter(
+        (i) =>
+          ![ci, si, pi, coli].includes(i) &&
+          data.some((r) => Number.isFinite(num(r[i]))),
+      );
+    if (numeric.length === 1) vi = numeric[0];
+  }
   let points = [];
   if (vi >= 0) {
     for (const r of data) {
@@ -303,6 +320,8 @@ function parse() {
       }
     }
   }
+  points.categoryLabel = clean(header[ci]);
+  points.valueLabel = vi >= 0 ? clean(header[vi]) : "";
   return points.length ? points : null;
 }
 function build() {
@@ -319,6 +338,8 @@ function build() {
   periods = [...new Set(pts.map((d) => d.period))];
   activePeriod = Math.min(activePeriod, periods.length - 1);
   model = pts.filter((d) => d.period === periods[activePeriod]);
+  model.categoryLabel = pts.categoryLabel;
+  model.valueLabel = pts.valueLabel;
   model.forEach((d) => {
     if (d.colour && /^#[0-9A-F]{6}$/i.test(d.colour))
       C[d.series] = d.colour.toUpperCase();
@@ -397,6 +418,11 @@ function render() {
     });
   let D = {
     data: model,
+    valueLabel:
+      window.sampleAttribution?.valueLabel ||
+      model.valueLabel ||
+      (series.length === 1 ? series[0] : ""),
+    categoryLabel: model.categoryLabel || "",
     width: +$("#w").value,
     height: +$("#h").value,
     spacing: +$("#p").value,
@@ -501,22 +527,29 @@ function interactive() {
   try {
     for (let i = 0; i < periods.length; i++) {
       activePeriod = i;
-      model = parse().filter((d) => d.period === periods[i]);
+      model = periodModel(periods[i]);
       render();
       frames.push(ChartExport.frame(periods[i]));
     }
   } finally {
     activePeriod = old;
-    model = parse().filter((d) => d.period === periods[old]);
+    model = periodModel(periods[old]);
     render();
   }
   ChartExport.download(frames, old);
+}
+function periodModel(period) {
+  const points = parse();
+  return Object.assign(
+    points.filter((d) => d.period === period),
+    { categoryLabel: points.categoryLabel, valueLabel: points.valueLabel },
+  );
 }
 ["w", "h", "p"].forEach((x) => ($("#" + x).oninput = render));
 $("#period").oninput = (e) => {
   activePeriod = +e.target.value;
   manualOrder = [];
-  model = parse().filter((d) => d.period === periods[activePeriod]);
+  model = periodModel(periods[activePeriod]);
   $("#periodLabel").textContent = periods[activePeriod];
   render();
 };
@@ -633,6 +666,22 @@ function drawBars(target, D, horizontal) {
   const g = target
     .append("g")
     .attr("transform", `translate(${m.left},${m.top})`);
+  g.append("text")
+    .attr("class", "axisTitle")
+    .attr("x", horizontal ? iw / 2 : 0)
+    .attr("y", horizontal ? ih + 44 : -16)
+    .attr("text-anchor", horizontal ? "middle" : "start")
+    .attr("font-size", 11)
+    .attr("fill", "#59636e")
+    .text(D.valueLabel || "");
+  g.append("text")
+    .attr("class", "categoryTitle")
+    .attr("x", horizontal ? -12 : iw / 2)
+    .attr("y", horizontal ? -16 : ih + 108)
+    .attr("text-anchor", horizontal ? "end" : "middle")
+    .attr("font-size", 11)
+    .attr("fill", "#59636e")
+    .text(D.categoryLabel || "");
   g.append("g")
     .attr("class", "gridline")
     .attr("transform", horizontal ? "translate(0," + ih + ")" : null)

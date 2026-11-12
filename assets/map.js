@@ -211,6 +211,7 @@ function parse() {
   numericFields = profiles
     .filter((x) => x.numeric && !reserved.has(x.i))
     .map((x) => x.i);
+  if (I.value < 0) I.value = numericFields[0] ?? -1;
   categoryFields = profiles
     .filter((x) => x.grouped && !x.numeric && !x.hex && !reserved.has(x.i))
     .map((x) => x.i);
@@ -1235,7 +1236,7 @@ function renderAreaSet(area) {
         c = colourFor(d);
       return {
         color: getColour("outline", "#ffffff"),
-        weight: 4,
+        weight: Math.max(0, Math.min(8, Number($("#outlineWidth").value))),
         opacity: 1,
         lineCap: "round",
         lineJoin: "round",
@@ -1904,6 +1905,7 @@ function applyColour(v) {
   if (/^#[0-9a-f]{6}$/i.test(v) && colourTarget) {
     colours[colourTarget] = v.toUpperCase();
     render();
+    syncControls();
   }
 }
 $("#hex").oninput = () => applyColour($("#hex").value);
@@ -1956,8 +1958,15 @@ async function fetchJSONResponse(url, options) {
   return { json: async () => structuredClone(data) };
 }
 function syncControls() {
-  $("#outlineColour").value = getColour("outline", "#ffffff");
-  $("#labelColour").value = getColour("labels", "#17212b");
+  $("#outlineWidthV").textContent = $("#outlineWidth").value + "px";
+  $("#outlineColour .swatch").style.backgroundColor = getColour(
+    "outline",
+    "#ffffff",
+  );
+  $("#labelColour .swatch").style.backgroundColor = getColour(
+    "labels",
+    "#17212b",
+  );
   $("#themeBtn").textContent = "Dark map";
   $("#themeBtn").classList.toggle("active", darkMap);
   $("#themeBtn").setAttribute("aria-pressed", String(darkMap));
@@ -1988,15 +1997,16 @@ function syncControls() {
   ["outlineColour", "outline"],
   ["labelColour", "labels"],
 ].forEach(([id, key]) => {
-  $("#" + id).oninput = (e) => {
-    colours[key] = e.target.value;
-    if (current) render();
-  };
+  $("#" + id).onclick = (e) => openColour(e, key);
 });
 $("#themeBtn").onclick = () => {
   darkMap = !darkMap;
   setMapMode();
   syncControls();
+};
+$("#outlineWidth").oninput = () => {
+  syncControls();
+  if (current) render();
 };
 syncControls();
 new ResizeObserver(() => {

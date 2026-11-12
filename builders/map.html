@@ -82,8 +82,35 @@
                 value="50"
               /><b id="mapOpacityV">50%</b></label
             >
+            <label class="ctrl"
+              >Outline thickness<input
+                id="outlineWidth"
+                type="range"
+                min="0"
+                max="8"
+                step="0.5"
+                value="4"
+                aria-label="Map outline thickness"
+              /><b id="outlineWidthV">4px</b></label
+            >
           </div>
           <div class="toolbarRow toolbarActions">
+            <button
+              class="btn colourSetting"
+              id="outlineColour"
+              type="button"
+              aria-label="Map outline colour"
+            >
+              Outline<span class="swatch" aria-hidden="true"></span>
+            </button>
+            <button
+              class="btn colourSetting"
+              id="labelColour"
+              type="button"
+              aria-label="Map label colour"
+            >
+              Labels<span class="swatch" aria-hidden="true"></span>
+            </button>
             <button class="btn active" id="mapModeBtn">Full map</button>
             <div class="menuWrap" id="pinControl">
               <button class="btn" id="pinBtn">
@@ -114,21 +141,7 @@
                 </button>
               </div>
             </div>
-            <label class="colourSetting"
-              >Outline
-              <input
-                id="outlineColour"
-                type="color"
-                value="#ffffff"
-                aria-label="Map outline colour" /></label
-            ><label class="colourSetting"
-              >Labels
-              <input
-                id="labelColour"
-                type="color"
-                value="#17212b"
-                aria-label="Map label colour" /></label
-            ><button class="btn" id="themeBtn" type="button">Dark map</button
+            <button class="btn" id="themeBtn" type="button">Dark map</button
             ><button class="btn" id="labelBtn">Labels outside</button>
             <div class="menuWrap colourWrap">
               <button class="btn" id="colourByBtn">

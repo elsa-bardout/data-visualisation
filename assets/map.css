@@ -457,7 +457,7 @@ body {
 }
 .dark-map .mapLabel {
   color: #f7f8fa;
-  text-shadow: 0 1px 3px #000;
+  text-shadow: none;
 }
 .dark-map .mapLabel .sub {
   color: #d8dee8;
@@ -475,7 +475,7 @@ body {
 }
 .dark-map .insideLabel {
   color: #17212b;
-  text-shadow: 0 0 3px #fff;
+  text-shadow: none;
 }
 .dark-map .insideLabel .sub {
   color: #405062;
@@ -490,16 +490,31 @@ body {
 .colourSetting {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 9px;
   font-size: 12px;
+  cursor: pointer;
 }
 .colourSetting input {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   padding: 0;
   border: 0;
   background: transparent;
   cursor: pointer;
+  border-radius: 5px;
+  box-shadow: 0 0 0 1px #d7dde2;
+  overflow: hidden;
+}
+.colourSetting input::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+.colourSetting input::-webkit-color-swatch {
+  border: 0;
+  border-radius: 3px;
+}
+.colourSetting input::-moz-color-swatch {
+  border: 2px solid white;
+  border-radius: 5px;
 }
 .mapLabel .main,
 .mapLabel .sub {

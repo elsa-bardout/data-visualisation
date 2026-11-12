@@ -189,6 +189,16 @@ function parse() {
     tci = idx(h, aliases.targetColour),
     ni = idx(h, aliases.note),
     points = [];
+  if (vi < 0) {
+    const numeric = h
+      .map((_, j) => j)
+      .filter(
+        (j) =>
+          ![xi, si, ci, ti, tci, ni].includes(j) &&
+          data.some((r) => Number.isFinite(num(r[j]))),
+      );
+    if (numeric.length === 1) vi = numeric[0];
+  }
   if (vi >= 0) {
     for (const r of data) {
       let x = clean(r[xi]),
@@ -234,7 +244,12 @@ function parse() {
           });
       }
   }
-  return finalise(points);
+  const result = finalise(points);
+  if (result) {
+    result.valueLabel = vi >= 0 ? clean(h[vi]) : "";
+    result.xLabel = clean(h[xi]);
+  }
+  return result;
 }
 function build() {
   clearStatus();
@@ -275,7 +290,15 @@ function draw(target, D, interactive = false) {
       d3.max((D.points || []).map((d) => String(d.x || "").length)) || 0,
     labelExtra = Math.min(180, Math.max(0, maxLabel * 5.8 - 42)),
     H = D.height + labelExtra,
-    m = { top: 25, right: 32, bottom: 65 + labelExtra, left: 70 },
+    m = {
+      top: 42,
+      right: Math.min(
+        W * 0.4,
+        Math.max(110, ...D.points.map((d) => d.series.length * 7 + 20)),
+      ),
+      bottom: 65 + labelExtra,
+      left: 70,
+    },
     iw = W - m.left - m.right,
     ih = H - m.top - m.bottom,
     series = [...new Set(D.points.map((d) => d.series))].filter(
@@ -356,7 +379,11 @@ function draw(target, D, interactive = false) {
   if (model.xType === "date") {
     if (xItems.length <= 14) xa.tickValues(xItems.map((d) => d.xv));
     else xa.ticks(Math.min(10, Math.floor(iw / 80)));
-    xa.tickFormat(d3.timeFormat("%b %Y"));
+    xa.tickFormat(
+      d3.timeFormat(
+        pts.every((d) => /^\d{4}$/.test(String(d.x))) ? "%Y" : "%b %Y",
+      ),
+    );
   }
   let xAxis = g
     .append("g")
@@ -414,6 +441,43 @@ function draw(target, D, interactive = false) {
       .attr("cy", (d) => y(d.value))
       .attr("r", D.pointSize)
       .attr("fill", (d) => C[d.series]);
+  const ends = groups
+    .map(([name, values]) => ({
+      name,
+      point: values.at(-1),
+      y: y(values.at(-1).value),
+    }))
+    .sort((a, b) => a.y - b.y);
+  for (let i = 1; i < ends.length; i++)
+    ends[i].y = Math.max(ends[i].y, ends[i - 1].y + 16);
+  if (ends.length && ends.at(-1).y > ih) {
+    ends.at(-1).y = ih;
+    for (let i = ends.length - 2; i >= 0; i--)
+      ends[i].y = Math.min(ends[i].y, ends[i + 1].y - 16);
+  }
+  g.selectAll(".seriesEndLeader")
+    .data(ends)
+    .join("path")
+    .attr("class", "seriesEndLeader")
+    .attr("d", (d) => `M${X(d.point) + 4},${y(d.point.value)}L${iw + 8},${d.y}`)
+    .attr("stroke", (d) => C[d.name])
+    .attr("fill", "none");
+  g.selectAll(".seriesEndLabel")
+    .data(ends)
+    .join("text")
+    .attr("class", "seriesEndLabel")
+    .attr("x", iw + 12)
+    .attr("y", (d) => d.y + 4)
+    .attr("fill", (d) => C[d.name])
+    .attr("font-size", 11)
+    .attr("font-weight", 600)
+    .text((d) => d.name);
+  g.append("text")
+    .attr("class", "axisTitle")
+    .attr("y", -18)
+    .attr("fill", "#59636e")
+    .attr("font-size", 11)
+    .text(D.valueLabel || "");
   let hits = g
     .selectAll(".pointHit")
     .data(flat)
@@ -503,6 +567,7 @@ function render() {
   if (!model) return;
   let D = {
     points: model.points,
+    valueLabel: window.sampleAttribution?.valueLabel || model.valueLabel || "",
     width: +$("#w").value,
     height: +$("#h").value,
     lineWidth: +$("#lw").value,

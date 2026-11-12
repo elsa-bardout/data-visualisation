@@ -4,11 +4,11 @@ Static snapshots prepared 10 November 2026. CSVs are bundled with the site; clic
 
 ## sankey
 
-**Where do refugees go?** — End of 2024 · people
+**Where do refugees go?** — End of 2024 · 30,958,200 refugees · all reported routes, grouped by region
 
-[UNHCR](https://refugeedata.unhcr.org/data-finder/) · [CSV](assets/samples/refugees.csv)
+[UNHCR](https://refugeedata.unhcr.org/en/documentation/data-coverage/metadata-catalog/PopStatsOfficial/) · [CSV](assets/samples/refugees.csv)
 
-Selected routes from Afghanistan, Syria and South Sudan to six host countries; refugees under UNHCR’s mandate, not all displaced people. Missing routes are not assumed to be zero.
+Complete country-route snapshot aggregated to UNHCR regions for readability, including unspecified origins. All 4,792 country records are available in the linked CSV and reconcile to all 170 asylum-country totals. Refugees under UNHCR’s mandate; excludes UNRWA refugees and other displaced populations. These are resident populations, not movements during the year.
 
 **Where does US government money go?** — Fiscal year 2025 · US$ billion
 
@@ -203,3 +203,9 @@ Twenty wards in five neighbourhoods, plus nine council libraries and three commu
 ## Rebuilding
 
 Download source files using `assets/samples/provenance.json` into `.review-tools/story-sources`, then run `python scripts/build_samples.py` (pandas and openpyxl required). The Camden ward grouping is retained from the existing sample; public library addresses are listed in the build script. Manually transcribed tables are identified in the script. Natural Earth country and US state boundaries are public-domain cartography, not legal boundary determinations.
+
+## Source-link check — 11 November 2026
+
+All catalog source pages were checked. The broken UNHCR data-finder link was replaced with the official dataset documentation. UNICEF and Camden block automated HTTP clients but their relevant pages were verified separately. The unavailable Keats website link was removed; Camden’s community-library directory identifies Keats.
+
+The refugee sample now covers all reported country routes, aggregated by UNHCR region to keep the chart readable. [Complete country-route CSV (4,792 records)](assets/samples/refugees-all-country-routes.csv). For rebuilding, fetch every page of the UNHCR query in provenance.json, concatenate its data, and preserve the pagination record with has_next set to false only after all 4,962 records have been retrieved.

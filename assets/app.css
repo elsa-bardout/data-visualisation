@@ -386,10 +386,21 @@ a:focus-visible,
   text-underline-offset: 2px;
 }
 .sampleSource {
-  margin: 0 20px 14px;
+  margin: 0;
   font-size: 12px;
   line-height: 1.5;
   color: #617084;
+}
+#grid tfoot td {
+  padding: 10px 14px;
+  white-space: normal;
+  max-width: 0;
+  background: #f7f9fb;
+  position: sticky;
+  top: auto;
+  bottom: 0;
+  font-weight: 400;
+  z-index: 4;
 }
 .sampleSource p {
   margin: 3px 0;

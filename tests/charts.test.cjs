@@ -11,6 +11,199 @@ vm.runInNewContext(
   samplesContext,
 );
 const samples = samplesContext.window.chartSamples;
+
+test("descriptive numeric headers retain scatter axes, point names and groups", () => {
+  const h = harness("scatter");
+  try {
+    h.w.chartBridge.setData([
+      [
+        "Country",
+        "Year",
+        "GDP per person ($)",
+        "Life expectancy (years)",
+        "Region",
+      ],
+      ["A", "2024", "12000", "72", "Europe"],
+      ["B", "2024", "4000", "63", "Asia"],
+    ]);
+    const text = h.w.document.querySelector("#svg").textContent;
+    assert.match(text, /GDP per person/);
+    assert.match(text, /Life expectancy/);
+    const pts = [...h.w.document.querySelectorAll(".pointHit")].map(
+      (n) => n.__data__,
+    );
+    assert.equal(pts[0].x, 12000);
+    assert.equal(pts[0].label, "A");
+    assert.equal(pts[0].series, "Europe");
+  } finally {
+    h.dom.window.close();
+  }
+});
+
+test("Sankey shares named nodes across explicit steps and preserves bypass ribbons", () => {
+  const h = harness("sankey");
+  try {
+    h.w.chartBridge.setData([
+      ["Source", "Target", "People helped", "Step"],
+      ["Initial contact", "Step one", "50", "1"],
+      ["Initial contact", "Step two", "30", "2"],
+      ["Initial contact", "Step three", "20", "3"],
+      ["Step one", "Step two", "50", "2"],
+      ["Step two", "Step three", "80", "3"],
+    ]);
+    const nodes = [...h.w.document.querySelectorAll(".node")].map(
+      (n) => n.__data__,
+    );
+    assert.equal(nodes.length, 4);
+    assert.equal(nodes.find((n) => n.name === "Initial contact").layer, 0);
+    assert.equal(nodes.find((n) => n.name === "Step three").layer, 3);
+    const links = [...h.w.document.querySelectorAll("path.link")].map(
+      (n) => n.__data__,
+    );
+    assert.ok(
+      links.some(
+        (l) =>
+          l.source.name === "Initial contact" &&
+          l.target.name === "Step three" &&
+          l.value === 20,
+      ),
+    );
+    h.w.chartBridge.setData([
+      ["Contact", "Assessment", "Support", "Outcome", "Households"],
+      ["Initial contact", "Step one", "Step two", "Step three", "50"],
+      ["Initial contact", "", "Step two", "Step three", "30"],
+      ["Initial contact", "", "", "Step three", "20"],
+    ]);
+    assert.equal(h.w.document.querySelectorAll(".node").length, 4);
+    assert.equal(
+      [...h.w.document.querySelectorAll(".node")].filter(
+        (n) => n.__data__.name === "Initial contact",
+      ).length,
+      1,
+    );
+  } finally {
+    h.dom.window.close();
+  }
+});
+
+test("small Sankey values have separate muted normal-weight text and room for long labels", () => {
+  const h = harness("sankey");
+  try {
+    const name = "Department of Defense—Military programmes and support";
+    h.w.chartBridge.setData([
+      ["Source", "Target", "Value"],
+      ["Budget", name, "10000"],
+      ["Budget", "Small programme", "1"],
+    ]);
+    const value = h.w.document.querySelector("tspan.value");
+    assert.ok(value);
+    assert.equal(value.getAttribute("font-weight"), "400");
+    assert.equal(value.getAttribute("fill"), "#707986");
+    const label = [...h.w.document.querySelectorAll(".node text")].find(
+      (n) => n.textContent === name,
+    );
+    assert.ok(label);
+    assert.ok(
+      Number(label.getAttribute("x")) + name.length * 7 <
+        Number(h.w.document.querySelector("#svg").getAttribute("width")),
+    );
+  } finally {
+    h.dom.window.close();
+  }
+});
+
+test("line series names appear beside their endpoints and annual ticks omit month", () => {
+  const h = harness("line");
+  try {
+    h.w.chartBridge.setData([
+      ["Year", "Violence", "Theft"],
+      ["2020", "12", "25"],
+      ["2021", "10", "20"],
+    ]);
+    assert.deepEqual(
+      [...h.w.document.querySelectorAll(".seriesEndLabel")]
+        .map((n) => n.textContent)
+        .sort(),
+      ["Theft", "Violence"],
+    );
+    assert.doesNotMatch(
+      h.w.document.querySelector(".xAxis").textContent,
+      /Jan/,
+    );
+  } finally {
+    h.dom.window.close();
+  }
+});
+
+test("donut slice dragging previews an insertion and preserves the resulting order", () => {
+  const h = harness("donut");
+  try {
+    const rows = [
+      ["Spending purpose", "Pounds"],
+      ["Housing", "50"],
+      ["Food", "30"],
+      ["Travel", "20"],
+    ];
+    h.w.chartBridge.setData(rows);
+    const slice = h.w.document.querySelector(".slice");
+    slice.dispatchEvent(
+      new h.w.MouseEvent("mousedown", {
+        bubbles: true,
+        view: h.w,
+        clientX: 60,
+        clientY: 0,
+        buttons: 1,
+      }),
+    );
+    h.w.dispatchEvent(
+      new h.w.MouseEvent("mousemove", {
+        bubbles: true,
+        view: h.w,
+        clientX: -90,
+        clientY: -70,
+        buttons: 1,
+      }),
+    );
+    assert.notEqual(
+      h.w.document.querySelector(".dropPreview").style.display,
+      "none",
+    );
+    assert.ok(h.w.document.querySelector(".slice.dragging"));
+    h.w.dispatchEvent(
+      new h.w.MouseEvent("mouseup", {
+        bubbles: true,
+        view: h.w,
+        clientX: -90,
+        clientY: -70,
+      }),
+    );
+    const order = h.w.chartSettings.get().manualOrder;
+    assert.notEqual(order[0], "Housing");
+    h.w.chartBridge.setData(rows);
+    assert.deepEqual(
+      Array.from(h.w.chartSettings.items(), (x) => x.name),
+      Array.from(order),
+    );
+  } finally {
+    h.dom.window.close();
+  }
+});
+
+test("complete refugee country records reconcile with the regional sample", () => {
+  const detail = utils
+    .parseDelimited(
+      fs.readFileSync("assets/samples/refugees-all-country-routes.csv", "utf8"),
+    )
+    .slice(1);
+  const regions = utils
+    .parseDelimited(fs.readFileSync("assets/samples/refugees.csv", "utf8"))
+    .slice(1);
+  assert.equal(detail.length, 4792);
+  assert.equal(new Set(detail.map((r) => r[1])).size, 170);
+  const sum = (rows) => rows.reduce((s, r) => s + Number(r[2]), 0);
+  assert.equal(sum(detail), 30958200);
+  assert.equal(sum(regions), sum(detail));
+});
 function harness(name) {
   const dom = new JSDOM(fs.readFileSync(`builders/${name}.html`, "utf8"), {
     runScripts: "outside-only",

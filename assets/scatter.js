@@ -33,9 +33,9 @@ const cl = (v) => String(v ?? "").trim(),
   A = {
     x: ["X", "XVALUE", "XAXIS", "INPUT"],
     y: ["Y", "YVALUE", "YAXIS", "VALUE", "OUTPUT"],
-    s: ["SERIES", "GROUP", "CATEGORY", "TYPE", "SEGMENT", "COHORT"],
+    s: ["SERIES", "GROUP", "CATEGORY", "TYPE", "SEGMENT", "COHORT", "REGION"],
     z: ["SIZE", "BUBBLE", "WEIGHT", "VOLUME", "COUNT", "POPULATION"],
-    l: ["LABEL", "NAME", "ITEM", "POINT", "SERVICE"],
+    l: ["LABEL", "NAME", "ITEM", "POINT", "SERVICE", "COUNTRY"],
     p: ["PERIOD", "DATE", "MONTH", "QUARTER", "YEAR", "WEEK", "TIME"],
     c: ["COLOUR", "COLOR", "HEX"],
     n: ["NOTE", "ANNOTATION", "COMMENT"],
@@ -84,9 +84,21 @@ function parse() {
   if (xi < 0 || yi < 0) {
     let ns = h
       .map((_, i) => i)
-      .filter((i) => data.some((r) => Number.isFinite(num(r[i]))));
+      .filter(
+        (i) =>
+          ![pi, zi, si, ci, li, ni].includes(i) &&
+          data.some((r) => Number.isFinite(num(r[i]))),
+      );
     if (ns.length < 2) return null;
-    xi = ns[0];
+    xi = xi < 0 ? ns[0] : xi;
+    yi = yi < 0 ? ns.find((i) => i !== xi) : yi;
+    if (li < 0)
+      li = h.findIndex(
+        (_, i) =>
+          !ns.includes(i) &&
+          ![pi, si, ci, ni, zi].includes(i) &&
+          data.some((r) => cl(r[i])),
+      );
     for (const j of ns.slice(1)) {
       if (j === zi || j === pi) continue;
       for (const r of data) {
@@ -96,11 +108,18 @@ function parse() {
           out.push({
             x,
             y,
-            series: cl(h[j]) || "Series",
-            size: NaN,
+            series: si >= 0 ? cl(r[si]) : cl(h[j]) || "Series",
+            size: zi >= 0 ? num(r[zi]) : NaN,
             label: li >= 0 ? cl(r[li]) : "",
             period: pi >= 0 ? cl(r[pi]) || "All" : "All",
-            meta: {},
+            meta: Object.fromEntries(
+              h
+                .map((k, i) => [k, r[i]])
+                .filter(
+                  ([k, v], i) =>
+                    cl(v) && ![xi, j, si, zi, li, pi, ci, ni].includes(i),
+                ),
+            ),
           });
       }
     }

@@ -18,6 +18,54 @@ function app() {
     ).runInContext(context);
   return { dom, w, doc: w.document };
 }
+test("sample titles use the chart header, sources stay outside parsed cells, and Clear resets the title", () => {
+  const h = app();
+  try {
+    const frame = h.doc.querySelector("#panel-sankey"),
+      doc = frame.contentDocument;
+    doc.open();
+    doc.write("<!doctype html><html><body></body></html>");
+    doc.close();
+    const title = doc.createElement("input");
+    title.id = "diagramTitle";
+    title.placeholder = "Enter title here";
+    doc.body.append(title);
+    let passed, info;
+    frame.contentWindow.chartBridge = {
+      setData: (d) => (passed = d),
+      resetAll: () => (title.value = ""),
+      getState: () => ({}),
+      setSampleInfo: (s) => (info = s),
+    };
+    h.w.chartSampleSets = {
+      sankey: [
+        {
+          title: "Contacts and outcomes",
+          reference: "2024 · people",
+          source: "Official data",
+          url: "https://example.org/data",
+          notes: "Complete cohort",
+          rows: [
+            ["Contact", "Outcome", "People"],
+            ["Phone", "Resolved", "20"],
+          ],
+        },
+      ],
+    };
+    h.doc.querySelector("#sample").click();
+    assert.equal(title.value, "Contacts and outcomes");
+    assert.equal(info.reference, "2024 · people");
+    assert.ok(h.doc.querySelector("#grid tfoot #sampleSource a"));
+    assert.ok(!passed.flat().includes("Complete cohort"));
+    h.doc.querySelector("#clear").click();
+    assert.equal(title.value, "");
+    assert.equal(title.placeholder, "Enter title here");
+    assert.equal(info, null);
+  } finally {
+    h.dom.window.close();
+  }
+});
+
 test("sample, reset and undo restore source data", () => {
   const h = app();
   try {
@@ -177,7 +225,7 @@ test("CSV upload replaces the table and remains undoable", async () => {
   }
 });
 
-test("curated samples cycle and wrap independently without generating a title", () => {
+test("curated samples cycle and wrap independently", () => {
   const h = app();
   try {
     h.w.chartSampleSets = {

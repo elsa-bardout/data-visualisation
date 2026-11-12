@@ -68,6 +68,7 @@
   }
   function renderGrid(focus) {
     normalise();
+    const sourceBox = $("#sampleSource");
     const table = $("#grid");
     table.replaceChildren();
     const head = document.createElement("thead"),
@@ -86,6 +87,12 @@
       });
       (r ? body : head).append(tr);
     });
+    const foot = table.createTFoot(),
+      sourceRow = foot.insertRow(),
+      sourceCell = sourceRow.insertCell();
+    sourceCell.colSpan = data[0].length + 1;
+    sourceCell.append(sourceBox);
+    foot.hidden = !sampleSource;
     if (focus) cellAt(focus.r, focus.c)?.focus();
     paintSelection();
   }
@@ -328,7 +335,21 @@
     const b = frames[mode].contentWindow?.chartBridge;
     if (!b) return;
     try {
-      frames[mode].contentWindow.sampleAttribution = copy(sampleSource);
+      const attribution = copy(sampleSource);
+      if (attribution?.extraSources)
+        attribution.extraSources = attribution.extraSources.map((s) => ({
+          ...s,
+          url: new URL(s.url, location.href).href,
+        }));
+      frames[mode].contentWindow.sampleAttribution = attribution;
+      const doc = frames[mode].contentDocument;
+      const title = doc?.querySelector("#diagramTitle,#title");
+      if (title && !data.slice(1).some(filled)) title.value = "";
+      if (title && sampleSource && !title.value) {
+        title.value = sampleSource.title;
+        title.dispatchEvent(new frames[mode].contentWindow.Event("input"));
+      }
+      b.setSampleInfo?.(sampleSource);
       b.setData(table);
     } catch (e) {
       notice("Chart could not be built: " + e.message);
@@ -338,12 +359,10 @@
     const box = $("#sampleSource");
     box.replaceChildren();
     box.hidden = !sampleSource;
+    if (box.closest("tfoot")) box.closest("tfoot").hidden = !sampleSource;
     if (!sampleSource) return;
-    const title = document.createElement("strong");
-    title.textContent = sampleSource.title;
-    box.append(title);
     const line = document.createElement("p");
-    line.append((sampleSource.reference || "") + " · Source: ");
+    line.append("Source: ");
     for (const [i, source] of [
       { label: sampleSource.source, url: sampleSource.url },
       ...(sampleSource.extraSources || []),
@@ -357,12 +376,11 @@
       a.rel = "noopener noreferrer";
       line.append(a);
     }
-    box.append(line);
     if (sampleSource.notes) {
-      const note = document.createElement("p");
-      note.textContent = sampleSource.notes;
-      box.append(note);
+      line.append(" · " + sampleSource.notes);
     }
+    box.append(line);
+    if (box.closest("tfoot")) box.closest("tfoot").hidden = false;
   }
   function activate(next) {
     if (!modes.includes(next)) return;
@@ -382,11 +400,11 @@
       sankey:
         "Use Source, Target and Value to show flows between steps. Add Period for a time slider, and extra columns for hover details.",
       donut:
-        "Put names in the first column and positive amounts beside them. Extra amount columns become periods. Drag labels to change the order.",
-      bar: "Use Category and Value; add Series for stacked bars and Period for a time slider. Negative values work too. Drag bars to reorder them.",
+        "Put names in the first column and positive amounts beside them. Give columns descriptive names. Drag sections or labels to change the order.",
+      bar: "Give columns descriptive names: text identifies categories and numbers give amounts. Add Series for stacks or Year for a time slider. Drag bars to reorder them.",
       line: "Use Date or X, Value and optionally Series. Add Target for a reference line and Note for an annotation. Extra details appear on hover.",
       scatter:
-        "Use X and Y for positions, Size for bubbles and Series for groups. Add Label, Period or extra hover details as needed.",
+        "Name the two numeric columns after the measures, including units; they become the horizontal and vertical axes. Add Country or Name for point labels, Region or Series for groups, and Size for bubbles.",
       map: "Postcodes and coordinates make pins; ward or council names make areas. Add Council to identify wards, Category for groups, and extra columns for hover details.",
     }[mode];
     updateTitle();
@@ -546,7 +564,7 @@
           sets.length +
           ": " +
           selected.title +
-          ". Click Try sample data again for another. Source links are below the table.",
+          ". Click Try sample data again for another. Sources and notes are in the table footer.",
       );
     } else notice("Sample loaded. Undo restores your previous data.");
   };

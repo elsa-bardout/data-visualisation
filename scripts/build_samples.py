@@ -18,9 +18,38 @@ SPENDING='https://www.ons.gov.uk/peoplepopulationandcommunity/personalandhouseho
 TREASURY='https://fiscaldata.treasury.gov/americas-finance-guide/federal-spending/'
 def add(mode,id,title,header,rows,source,url,reference,notes):
  rows=list(rows); assert rows, id
+ labels={
+  'refugees':['Origin region','Asylum region','Refugees (people)'],
+  'federal-functions':['Federal function','Expenditure subfunction','Net outlays (US$ billion)'],
+  'industry-gases':['Economic sector','Greenhouse gas','Emissions (thousand tonnes CO2e)'],
+  'income-spending':['Disposable-income quintile','Spending purpose','Weekly expenditure (£ per household)'],
+  'homelessness-flows':['From duty or assessment','To duty or outcome','Households'],
+  'federal-outlays':['Federal function','Net outlays (US$ billion)'],
+  'uk-emissions':['Sector','Emissions (million tonnes CO2e)'],
+  'world-energy':['Energy source','Primary energy (TWh)'],
+  'household-spending':['Spending purpose','Weekly expenditure (£ per household)'],
+  'child-death-causes':['Cause of death','Share of under-five deaths (%)'],
+  'maternal-mortality':['Race and Hispanic origin','Deaths per 100,000 live births'],
+  'france-identity-checks':['Population group','2016','2024'],
+  'migration-fiscal':['Visa route and applicant group','Net lifetime fiscal contribution (£ million)'],
+  'unpaid-work':['Country and sex','Series','Unpaid work (minutes per day)'],
+  'housing-regions':['Region','Median house-price-to-earnings ratio'],
+  'income-longevity':['Country','GDP per capita (2011 international $)','Life expectancy (years)','Region'],
+  'health-longevity':['Country','Health spending per person (2020 international $)','Life expectancy (years)','Region'],
+  'income-carbon':['Country','GDP per capita (2011 international $)','CO2 emissions (tonnes per person)','Region'],
+  'income-child-survival':['Country','GDP per capita (2011 international $)','Under-five deaths per 1,000 live births','Region'],
+  'growth-carbon':['Country','Year','Annual real GDP change (%)','Annual CO2 emissions change (%)'],
+  'extreme-poverty':['Country','Name','Population below $3/day (%)'],
+  'clean-cooking':['Country','Name','Population without clean cooking (%)'],
+  'carbon-per-person':['Country','Name','Territorial CO2 (tonnes per person)'],
+  'housing-authorities':['Council code','Name','Median house-price-to-earnings ratio'],
+ }
+ header=labels.get(id,header)
  with (OUT/(id+'.csv')).open('w',newline='',encoding='utf-8') as f:
   csv.writer(f).writerows([header]+rows)
  catalog[mode].append(dict(id=id,title=title,csv='assets/samples/'+id+'.csv',source=source,url=url,reference=reference,notes=notes))
+ units={'emissions-history':'Emissions (million tonnes CO2e)','housing-history':'Median house-price-to-earnings ratio','crime-history':'Estimated incidents (thousands)','rough-sleeping':'People sleeping rough on one night','vaccination':'Children vaccinated (%)','france-identity-checks':'Reported identity check in preceding five years (%)','unpaid-work':'Unpaid work (minutes per day)'}
+ if id in units:catalog[mode][-1]['valueLabel']=units[id]
 def num(x):
  try:return float(str(x).replace(',',''))
  except:return None
@@ -29,12 +58,22 @@ def owidurl(slug):return 'https://ourworldindata.org/grapher/'+slug
 def clean(x):return re.sub(r'\s+',' ',html.unescape(re.sub('<[^>]+>',' ',re.sub(r'<sup>.*?</sup>','',str(x))))).strip()
 
 # Actual origin/destination records; the two regional dimensions must be retained in the API query.
-ref=json.loads((RAW/'refugees.json').read_text())
+ref=json.loads((RAW/'refugees-full.json').read_text())
 assert not ref['pagination']['has_next']
-add('sankey','refugees','Where do refugees go?', ['Source','Target','Value'],
- [[r['area_ori_adm0_label'],r['ref_area_adm0_label'],r['obs_value']] for r in ref['data'] if r['time_period']=='2024-12' and r['obs_value']>0],
- 'UNHCR','https://refugeedata.unhcr.org/data-finder/','End of 2024 · people',
- 'Selected routes from Afghanistan, Syria and South Sudan to six host countries; refugees under UNHCR’s mandate, not all displaced people. Missing routes are not assumed to be zero.')
+detail=[r for r in ref['data'] if r['area_ori_adm0']!='_T' and r['ref_area_adm0']!='_T']
+totals=[r for r in ref['data'] if r['area_ori_adm0']=='_T']
+assert len(detail)==4792
+assert sum(r['obs_value'] for r in detail)==sum(r['obs_value'] for r in totals)==30958200
+for t in totals:assert t['obs_value']==sum(r['obs_value'] for r in detail if r['ref_area_adm0']==t['ref_area_adm0'])
+regions=defaultdict(int)
+for r in detail:regions[(r['area_ori_region_unhcr_label'],r['ref_area_region_unhcr_label'])]+=r['obs_value']
+with (OUT/'refugees-all-country-routes.csv').open('w',newline='',encoding='utf8') as f:
+ csv.writer(f).writerows([['Country of origin','Country of asylum','Refugees (people)','Year']]+[[r['area_ori_adm0_label'],r['ref_area_adm0_label'],r['obs_value'],2024] for r in detail])
+add('sankey','refugees','Where do refugees go?',['Source','Target','Value'],
+ [[a+' (origin)',b+' (asylum)',v] for (a,b),v in sorted(regions.items()) if v>0],
+ 'UNHCR','https://refugeedata.unhcr.org/en/documentation/data-coverage/metadata-catalog/PopStatsOfficial/','End of 2024 · 30,958,200 refugees · all reported routes, grouped by region',
+ 'Complete country-route snapshot aggregated to UNHCR regions for readability, including unspecified origins. All 4,792 country records are available in the linked CSV and reconcile to all 170 asylum-country totals. Refugees under UNHCR’s mandate; excludes UNRWA refugees and other displaced populations. These are resident populations, not movements during the year.')
+catalog['sankey'][-1]['extraSources']=[{'label':'Complete country-route CSV (4,792 records)','url':'assets/samples/refugees-all-country-routes.csv'}]
 
 t=json.loads((RAW/'treasury.json').read_text())['data']; parent=next(r['classification_id'] for r in t if r['classification_desc']=='Net Outlays')
 functions={r['classification_desc']:float(r['current_fytd_rcpt_outly_amt'])/1e9 for r in t if r['parent_id']==parent and r['classification_desc']!='Total'}
@@ -157,12 +196,14 @@ groups={'Central':['Camden Town','Primrose Hill',"Regent’s Park",'St Pancras &
 wards=[[w.replace('’',"'"),g] for g,ws in groups.items() for w in ws]; lib=[
  ('Camden Town Library','218 Eversholt Street, London NW1 1BD'),('Highgate Library','Chester Road, London N19 5DH'),('Holborn Library','32–38 Theobalds Road, London WC1X 8PA'),('Kentish Town Library','262–266 Kentish Town Road, London NW5 2AA'),('Kilburn Library','12–22 Kilburn High Road, London NW6 5UH'),('Pancras Square Library','5 Pancras Square, London N1C 4AG'),('Queen’s Crescent Library','165 Queen’s Crescent, London NW5 4HH'),('Swiss Cottage Library','88 Avenue Road, London NW3 3HA'),('West Hampstead Library','Dennington Park Road, London NW6 1AU'),('Primrose Hill Community Library','11–16 Sharples Hall Street, London NW1 8YN'),('Belsize Community Library','Antrim Road, London NW3 4XN'),('Keats Community Library','10 Keats Grove, London NW3 2RR')]
 add('map','camden-libraries','Camden wards and public libraries',['Ward','Council','Address','Name','Category','Library type'],[[name,'Camden','',name,cat,''] for name,cat in wards]+[['','Camden',addr,name,'Library','Council-run' if i<9 else 'Community-run'] for i,(name,addr) in enumerate(lib)],'Camden Council','https://www.camden.gov.uk/libraries-opening-times','Directory checked 10 November 2026','Twenty wards in five neighbourhoods, plus nine council libraries and three community libraries open to the public. Pins use full street addresses; no invented activity or population figures.')
-catalog['map'][-1]['extraSources']=[{'label':'Community libraries','url':'https://www.camden.gov.uk/community-libraries'},{'label':'Primrose Hill','url':'https://www.phcl.org/locations/primrose-hill-community-library/'},{'label':'Belsize','url':'https://thewinch.org/our-services/belsize-community-library/'},{'label':'Keats','url':'https://www.keatscommunitylibrary.org.uk/about.php'}]
+catalog['map'][-1]['extraSources']=[{'label':'Community libraries (including Keats)','url':'https://www.camden.gov.uk/community-libraries'},{'label':'Primrose Hill','url':'https://www.phcl.org/locations/primrose-hill-community-library/'},{'label':'Belsize','url':'https://thewinch.org/our-services/belsize-community-library/'}]
 for mode,entries in catalog.items():assert len(entries)==(6 if mode=='map' else 5),(mode,len(entries))
 Path('assets/sample-sets.js').write_text('/* Static source snapshots; generated by scripts/build_samples.py. */\nwindow.chartSampleSets = '+json.dumps(catalog,ensure_ascii=False,indent=2)+';\n',encoding='utf8')
 urls.update({'refugees.json':'https://api-data.unhcr.org/api/v0/data/PopStatsOfficial?c[pop_type]=REF_UNHCR&c[area_ori_adm0]=SYR,AFG,SSD&c[ref_area_adm0]=TUR,DEU,PAK,IRN,UGA,SDN&time_period=eq:2024&dimensions=pop_type,ref_area_region_unhcr,ref_area_adm0,area_ori_region_unhcr,area_ori_adm0&page_size=100','treasury-detail.json':'https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/mts/mts_table_9_outlays_functions_subfunctions?filter=record_date:eq:2025-09-30&page[size]=200','kff-map.csv':'https://datawrapper.dwcdn.net/6AHYt/33/dataset.csv','kff-table.csv':'https://datawrapper.dwcdn.net/0knfK/40/dataset.csv','global-vaccination-coverage.csv':owidurl('global-vaccination-coverage')+'.csv'})
-(OUT/'provenance.json').write_text(json.dumps({'retrieved':'2026-11-10','downloads':urls},indent=2),encoding='utf8')
+urls.pop('refugees.json',None)
+urls['refugees-full.json']='https://api-data.unhcr.org/api/v0/data/PopStatsOfficial?c[pop_type]=REF_UNHCR&time_period=eq:2024&dimensions=pop_type,ref_area_region_unhcr,ref_area_adm0,area_ori_region_unhcr,area_ori_adm0&page_size=100'
+(OUT/'provenance.json').write_text(json.dumps({'retrieved':'2026-11-10','refugees_retrieved':'2026-11-11','refugees_pagination':'Fetch pages 1–50 and concatenate data. 4,962 records include 170 host totals; 4,792 country records sum to 30,958,200. Exclude _T aggregate origins to avoid double counting.','downloads':urls},indent=2),encoding='utf8')
 Path('SOURCES.md').write_text('# Sample data sources\n\nStatic snapshots prepared 10 November 2026. CSVs are bundled with the site; clicking Try sample data does not query source data providers. Map location lookup is separate (see PRIVACY.html). Missing observations are never filled with zero.\n\n'+ '\n\n'.join('## '+mode+'\n\n'+'\n\n'.join('**'+e['title']+'** — '+e['reference']+'\n\n['+e['source']+']('+e['url']+') · [CSV]('+e['csv']+')\n\n'+e['notes'] for e in entries) for mode,entries in catalog.items())+'\n\n## Rebuilding\n\nDownload source files using `assets/samples/provenance.json` into `.review-tools/story-sources`, then run `python scripts/build_samples.py` (pandas and openpyxl required). The Camden ward grouping is retained from the existing sample; public library addresses are listed in the build script. Manually transcribed tables are identified in the script. Natural Earth country and US state boundaries are public-domain cartography, not legal boundary determinations.\n',encoding='utf8')
+with Path('SOURCES.md').open('a',encoding='utf8') as f:
+ f.write('\n## Source-link check — 11 November 2026\n\nAll catalog source pages were checked. The broken UNHCR data-finder link was replaced with the official dataset documentation. UNICEF and Camden block automated HTTP clients but their relevant pages were verified separately. The unavailable Keats website link was removed; Camden’s community-library directory identifies Keats.\n\nThe refugee sample now covers all reported country routes, aggregated by UNHCR region to keep the chart readable. [Complete country-route CSV (4,792 records)](assets/samples/refugees-all-country-routes.csv). For rebuilding, fetch every page of the UNHCR query in provenance.json, concatenate its data, and preserve the pagination record with has_next set to false only after all 4,962 records have been retrieved.\n')
 print({m:len(v) for m,v in catalog.items()})
-
-

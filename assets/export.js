@@ -85,6 +85,15 @@
       const f = data.frames[+select.value];
       document.querySelector("main").innerHTML = f.svg;
       document.querySelector("h1").textContent = f.title || data.title;
+      let context = document.querySelector(".sample-context");
+      if (!context) {
+        context = document.createElement("p");
+        context.className = "sample-context";
+        context.style.cssText = "margin:8px 0 0;color:#617084;font-size:12px";
+        document.querySelector("h1").after(context);
+      }
+      context.textContent = f.source?.reference || "";
+      context.hidden = !context.textContent;
       document.querySelector("output").textContent = f.label;
       let citation = document.querySelector(".sample-citation");
       if (!citation) {
@@ -96,7 +105,7 @@
       }
       citation.replaceChildren();
       if (f.source) {
-        citation.append(f.source.title + " · " + f.source.reference + " · ");
+        citation.append("Source: ");
         for (const source of [
           { label: f.source.source, url: f.source.url },
           ...(f.source.extraSources || []),
@@ -110,7 +119,7 @@
           a.style.color = "inherit";
           citation.append(a, " ");
         }
-        citation.append(document.createElement("br"), f.source.notes);
+        citation.append(" · ", f.source.notes);
       }
       citation.hidden = !f.source;
       const legend = document.querySelector(".legend");

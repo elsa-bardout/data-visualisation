@@ -228,6 +228,12 @@ function rowsToLinks(h, data, forced = {}) {
     sti = hidx(h, alias.stage),
     ci = hidx(h, alias.colour),
     gi = hidx(h, alias.group);
+  if (vi < 0 && si >= 0 && ti >= 0)
+    vi = h.findIndex(
+      (_, i) =>
+        ![si, ti, pi, sti, ci, gi].includes(i) &&
+        data.some((r) => Number.isFinite(number(r[i]))),
+    );
   if (si < 0 || ti < 0 || vi < 0) return null;
   let links = [];
   for (const r of data) {
@@ -259,6 +265,7 @@ function rowsToLinks(h, data, forced = {}) {
     stageIndex: sti,
     valueLabel: clean(h[vi]) || "Value",
     groupLabel: gi >= 0 ? clean(h[gi]) : "",
+    stageLabels: sti < 0 ? [clean(h[si]), clean(h[ti])] : null,
   };
 }
 function wideToLinks(h, data) {
@@ -285,17 +292,20 @@ function wideToLinks(h, data) {
   for (const r of data) {
     let v = number(r[vi]);
     if (!Number.isFinite(v) || v < 0) continue;
-    let path = pathCols.map((i) => clean(r[i])).filter(Boolean);
+    let path = pathCols
+      .map((col, step) => ({ name: clean(r[col]), step }))
+      .filter((x) => x.name);
     for (let i = 0; i < path.length - 1; i++)
       links.push({
-        s: path[i],
-        t: path[i + 1],
+        s: path[i].name,
+        t: path[i + 1].name,
         v,
         period: pi >= 0 ? clean(r[pi]) : "",
-        stage: i + 1,
+        stage: path[i + 1].step,
+        sourceStage: path[i].step,
         colour: "",
         group: "",
-        meta: { Path: path.join(" → ") },
+        meta: { Path: path.map((x) => x.name).join(" → ") },
       });
   }
   return {
@@ -304,6 +314,7 @@ function wideToLinks(h, data) {
     stageIndex: 0,
     valueLabel: clean(h[vi]) || "Value",
     groupLabel: "",
+    stageLabels: pathCols.map((i) => clean(h[i])),
   };
 }
 function nodesPlusLinks(h, data) {
@@ -387,11 +398,18 @@ function topoLayers(links, explicit) {
     for (const t of out.get(n))
       layer.set(t, Math.max(layer.get(t), layer.get(n) + 1));
   if (explicit) {
-    for (const l of links) {
+    // A name is one node even when its outgoing routes skip stages.
+    const starts = new Map();
+    for (const l of links)
       if (Number.isFinite(l.stage)) {
-        layer.set(l.s, Math.max(layer.get(l.s) || 0, l.stage - 1));
-        layer.set(l.t, Math.max(layer.get(l.t) || 0, l.stage));
+        const start = l.sourceStage ?? l.stage - 1;
+        starts.set(l.s, Math.min(starts.get(l.s) ?? Infinity, start));
+        layer.set(l.t, Math.max(layer.get(l.t), l.stage));
       }
+    for (const n of order) {
+      if (starts.has(n)) layer.set(n, Math.max(layer.get(n), starts.get(n)));
+      for (const t of out.get(n))
+        layer.set(t, Math.max(layer.get(t), layer.get(n) + 1));
     }
   }
   return { layer };
@@ -410,8 +428,9 @@ function aggregate(links) {
   return [...m.values()];
 }
 function makeModel(links, explicitStage) {
+  const topology = topoLayers(links, explicitStage);
   let staged = explicitStage && links.every((l) => Number.isFinite(l.stage));
-  if (staged) {
+  if (staged && topology.error) {
     let agg = aggregate(links),
       nodeMap = new Map(),
       outLinks = [];
@@ -435,7 +454,7 @@ function makeModel(links, explicitStage) {
     }
     return { nodes: [...nodeMap.values()], links: outLinks };
   }
-  let topo = topoLayers(links, false);
+  let topo = topology;
   if (topo.error) return topo;
   let agg = aggregate(links),
     nodeMap = new Map();
@@ -633,6 +652,10 @@ function build() {
     periodModels = [{ label: parsed.valueLabel, model: mm }];
   }
   activePeriod = Math.min(activePeriod, periodModels.length - 1);
+  periodModels.forEach((p) => {
+    p.model.stageLabels = parsed.stageLabels;
+    p.model.valueLabel = parsed.valueLabel;
+  });
   model = periodModels[activePeriod].model;
   let pc = $("#periodCtrl"),
     pr = $("#period");
@@ -684,10 +707,26 @@ function autoHeight() {
 }
 function render() {
   if (!model) return;
-  let W = +$("#w").value,
-    P = +$("#p").value,
+  const lastLayer = Math.max(...model.nodes.map((n) => n.layer));
+  const labelRoom = (nodes) =>
+    Math.max(80, ...nodes.map((n) => n.name.length * 7.8 + 85));
+  const isTwoColumns = new Set(model.nodes.map((n) => n.layer)).size === 2;
+  const leftSpace = isTwoColumns
+    ? labelRoom(model.nodes.filter((n) => n.layer === 0))
+    : 20;
+  const rightSpace = labelRoom(
+    model.nodes.filter((n) => n.layer === lastLayer),
+  );
+  const columnSpace = isTwoColumns ? 260 : labelRoom(model.nodes) + 50;
+  let W = Math.max(
+      +$("#w").value,
+      leftSpace + rightSpace + Math.max(1, lastLayer) * columnSpace,
+    ),
+    P = Math.max(14, +$("#p").value),
     H = Math.max(+$("#h").value, autoHeight());
   if (+$("#h").value < H) $("#h").value = Math.min(H, +$("#h").max);
+  $("#p").min = 14;
+  $("#p").value = P;
   H = +$("#h").value;
   $("#wv").textContent = W;
   $("#hv").textContent = H;
@@ -710,8 +749,8 @@ function render() {
           : a.index - b.index;
   let layerCount = new Set(model.nodes.map((n) => n.layer)).size,
     isSimpleSankey = layerCount === 2,
-    leftMargin = isSimpleSankey ? 170 : 20,
-    rightMargin = isSimpleSankey ? 170 : 210;
+    leftMargin = leftSpace,
+    rightMargin = rightSpace;
   sk = d3
     .sankey()
     .nodeId((d) => d.id)
@@ -759,9 +798,18 @@ function render() {
     .attr("class", "stage")
     .attr("x", (d) => d + 8)
     .attr("y", 19)
-    .text((d, i) =>
-      i === 0 ? "Start" : i === xs.length - 1 ? "Outcome" : `Stage ${i}`,
+    .text(
+      (d, i) =>
+        model.stageLabels?.[lay.nodes.find((n) => n.x0 === d)?.layer] ||
+        (i === 0 ? "Start" : i === xs.length - 1 ? "Outcome" : `Stage ${i}`),
     );
+  S.append("text")
+    .attr("class", "measureLabel")
+    .attr("x", leftMargin)
+    .attr("y", H - 8)
+    .attr("font-size", 11)
+    .attr("fill", "#707986")
+    .text(model.valueLabel || "");
   let lg = S.append("g"),
     preview = S.append("g").style("display", "none");
   preview.append("path").attr("class", "dragPreview");
@@ -907,9 +955,14 @@ function render() {
     .attr("x", labelX)
     .attr("y", (d) => (d.y0 + d.y1) / 2 + (small(d) ? 4 : -6))
     .attr("text-anchor", labelAnchor)
-    .text((d) =>
-      small(d) ? `${d.name}  ${d.value.toLocaleString()}` : d.name,
-    );
+    .text((d) => d.name)
+    .filter(small)
+    .append("tspan")
+    .attr("class", "value")
+    .attr("dx", 5)
+    .attr("font-weight", 400)
+    .attr("fill", "#707986")
+    .text((d) => d.value.toLocaleString());
   ng.filter((d) => !small(d))
     .append("text")
     .attr("class", "value")

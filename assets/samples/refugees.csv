@@ -1,14 +1,43 @@
-Source,Target,Value
-Afghanistan,Islamic Republic of Iran,3477082
-Afghanistan,Pakistan,1559964
-Syrian Arab Republic,Pakistan,53
-South Sudan,Sudan,613052
-Syrian Arab Republic,Sudan,9860
-Afghanistan,Uganda,234
-South Sudan,Uganda,975020
-Syrian Arab Republic,Uganda,42
-Afghanistan,Germany,279737
-South Sudan,Germany,175
-Syrian Arab Republic,Germany,725102
-Afghanistan,Türkiye,14145
-Syrian Arab Republic,Türkiye,2901478
+Origin region,Asylum region,Refugees (people)
+Americas (origin),Americas (asylum),723316
+Americas (origin),Asia and the Pacific (asylum),415
+Americas (origin),Eastern and Southern Africa (asylum),5
+Americas (origin),Europe (asylum),209453
+Asia and the Pacific (origin),Americas (asylum),215446
+Asia and the Pacific (origin),Asia and the Pacific (asylum),6622917
+Asia and the Pacific (origin),Eastern and Southern Africa (asylum),1384
+Asia and the Pacific (origin),Europe (asylum),957507
+Asia and the Pacific (origin),Middle East and North Africa (asylum),5385
+Asia and the Pacific (origin),West and Central Africa (asylum),192
+Eastern and Southern Africa (origin),Americas (asylum),40771
+Eastern and Southern Africa (origin),Asia and the Pacific (asylum),7259
+Eastern and Southern Africa (origin),Eastern and Southern Africa (asylum),4332499
+Eastern and Southern Africa (origin),Europe (asylum),440433
+Eastern and Southern Africa (origin),Middle East and North Africa (asylum),337593
+Eastern and Southern Africa (origin),West and Central Africa (asylum),1460242
+Europe (origin),Americas (asylum),131178
+Europe (origin),Asia and the Pacific (asylum),2857
+Europe (origin),Eastern and Southern Africa (asylum),328
+Europe (origin),Europe (asylum),5538745
+Europe (origin),Middle East and North Africa (asylum),4350
+Europe (origin),West and Central Africa (asylum),656
+Middle East and North Africa (origin),Americas (asylum),51577
+Middle East and North Africa (origin),Asia and the Pacific (asylum),21832
+Middle East and North Africa (origin),Eastern and Southern Africa (asylum),31784
+Middle East and North Africa (origin),Europe (asylum),4451600
+Middle East and North Africa (origin),Middle East and North Africa (asylum),2066402
+Middle East and North Africa (origin),West and Central Africa (asylum),28156
+Stateless/Unspecified (origin),Americas (asylum),661
+Stateless/Unspecified (origin),Asia and the Pacific (asylum),2532
+Stateless/Unspecified (origin),Europe (asylum),33103
+Unspecified (origin),Americas (asylum),7539
+Unspecified (origin),Asia and the Pacific (asylum),92280
+Unspecified (origin),Eastern and Southern Africa (asylum),7
+Unspecified (origin),Europe (asylum),91644
+Unspecified (origin),Middle East and North Africa (asylum),219
+West and Central Africa (origin),Americas (asylum),48053
+West and Central Africa (origin),Asia and the Pacific (asylum),1101
+West and Central Africa (origin),Eastern and Southern Africa (asylum),972395
+West and Central Africa (origin),Europe (asylum),290983
+West and Central Africa (origin),Middle East and North Africa (asylum),156912
+West and Central Africa (origin),West and Central Africa (asylum),1576489
