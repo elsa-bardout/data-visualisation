@@ -622,20 +622,47 @@ document.addEventListener("pointerdown", (e) => {
 grid();
 
 function drawBars(target, D, horizontal) {
-  const W = D.width,
-    H = D.height,
-    cats = D.categories,
-    series = D.series,
-    m = {
-      top: 32,
-      right: 60,
-      bottom: horizontal ? 60 : 120,
-      left: horizontal
-        ? Math.min(220, Math.max(100, d3.max(cats, (c) => c.length) * 7))
-        : 75,
-    },
-    iw = Math.max(40, W - m.left - m.right),
-    ih = Math.max(40, H - m.top - m.bottom);
+  const cats = D.categories,
+    series = D.series;
+  // Measure the actual category font before reserving space in the SVG.
+  // The same layout is used by the preview and exported charts.
+  const ruler = target
+    .append("g")
+    .attr("class", "axis categoryAxis")
+    .attr("visibility", "hidden");
+  const widths = cats.map((label) => {
+    const text = ruler
+      .append("text")
+      .attr("font-size", 11)
+      .attr("font-weight", 700)
+      .text(label);
+    const width =
+      text.node().getComputedTextLength?.() || String(label).length * 7;
+    text.remove();
+    return width;
+  });
+  ruler.remove();
+  const longest = Math.max(0, ...widths);
+  const angle = cats.length > 18 ? 60 : 35;
+  const radians = (angle * Math.PI) / 180;
+  const m = {
+    top: 32,
+    right: 60,
+    bottom: horizontal ? 60 : Math.ceil(longest * Math.sin(radians) + 52),
+    left: horizontal
+      ? Math.max(100, longest + 24)
+      : Math.max(75, Math.ceil(longest * Math.cos(radians) + 16)),
+  };
+  const W = Math.max(
+    D.width,
+    m.left + m.right + (horizontal ? 240 : cats.length * 24),
+  );
+  const H = Math.max(
+    D.height,
+    m.top + m.bottom + (horizontal ? cats.length * 22 : 200),
+  );
+  const iw = W - m.left - m.right,
+    ih = H - m.top - m.bottom;
   const agg = new Map();
   D.data.forEach((d) => {
     const key = JSON.stringify([d.category, d.series]);
@@ -680,7 +707,7 @@ function drawBars(target, D, horizontal) {
   g.append("text")
     .attr("class", "categoryTitle")
     .attr("x", horizontal ? -12 : iw / 2)
-    .attr("y", horizontal ? -16 : ih + 108)
+    .attr("y", horizontal ? -16 : H - m.top - 14)
     .attr("text-anchor", horizontal ? "end" : "middle")
     .attr("font-size", 11)
     .attr("fill", "#59636e")
@@ -709,7 +736,7 @@ function drawBars(target, D, horizontal) {
   if (!horizontal)
     categoryAxis
       .selectAll("text")
-      .attr("transform", "rotate(-35)")
+      .attr("transform", `rotate(-${angle})`)
       .attr("text-anchor", "end");
   g.append("line")
     .attr("stroke", "#59636e")

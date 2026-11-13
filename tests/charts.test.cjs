@@ -1233,3 +1233,44 @@ test("map prioritises countries over regions and offers both measures and contin
   assert.equal(regions.kind, "area");
   assert.equal(regions.gj.features.length, 2);
 });
+
+test("smaller map labels fit areas that need callouts at larger sizes", () => {
+  const context = {
+    map: { latLngToContainerPoint: ([y, x]) => ({ x, y }) },
+    document: {
+      createElement: () => ({
+        getContext: () => ({
+          font: "",
+          measureText(t) {
+            return {
+              width: t.length * Number(this.font.match(/(\d+)px/)[1]) * 0.6,
+            };
+          },
+        }),
+      }),
+    },
+    labelParts: (d) => ({ main: d.name, sub: [] }),
+  };
+  vm.createContext(context);
+  for (const fn of ["pointInRing", "segmentDistance", "fitAreaLabel"])
+    vm.runInContext(mapFunction(fn), context);
+  const area = {
+    feature: {
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [0, 0],
+            [80, 0],
+            [80, 25],
+            [0, 25],
+            [0, 0],
+          ],
+        ],
+      },
+    },
+    data: { name: "Camden" },
+  };
+  assert.equal(context.fitAreaLabel(area, [], 20), null);
+  assert.ok(context.fitAreaLabel(area, [], 7));
+});

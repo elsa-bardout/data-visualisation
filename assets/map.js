@@ -507,7 +507,7 @@ function labelParts(d) {
 }
 function labelHtml(d, size = 11, out = false, side = "right") {
   let q = labelParts(d);
-  return `<div class="${out ? "outsideLabel " + side : ""}"><span class="main" style="font-size:${size}px">${esc(q.main)}</span>${q.sub.map((x) => `<span class="sub">${esc(x)}</span>`).join("")}</div>`;
+  return `<div class="${out ? "outsideLabel " + side : ""}"><span class="main" style="font-size:${size}px">${esc(q.main)}</span>${q.sub.map((x) => `<span class="sub" style="font-size:${Math.max(7, size - 1)}px">${esc(x)}</span>`).join("")}</div>`;
 }
 function pointInRing(p, ring) {
   let inside = false;
@@ -591,7 +591,7 @@ function visualCentre(feature) {
   return best ? L.latLng(best.p[1], best.p[0]) : null;
 }
 // Fit the entire fixed-size text block, not only its centre, inside a polygon.
-function fitAreaLabel(item, obstacles) {
+function fitAreaLabel(item, obstacles, size = 11) {
   const polys = (
     item.feature.geometry.type === "Polygon"
       ? [item.feature.geometry.coordinates]
@@ -606,7 +606,7 @@ function fitAreaLabel(item, obstacles) {
   );
   const canvas = document.createElement("canvas"),
     ctx = canvas.getContext("2d");
-  ctx.font = '700 11px Inter, "Segoe UI", sans-serif';
+  ctx.font = `700 ${size}px Inter, "Segoe UI", sans-serif`;
   const parts = labelParts(item.data),
     words = parts.main.split(/\s+/);
   const variants = [];
@@ -636,7 +636,7 @@ function fitAreaLabel(item, obstacles) {
       lines,
       sub: parts.sub,
       w: Math.max(...all.map((t) => ctx.measureText(t).width)) + 6,
-      h: all.length * 14 + 4,
+      h: all.length * Math.ceil(size * 1.25) + 4,
     });
   }
   let best = null;
@@ -714,7 +714,7 @@ function fitAreaLabel(item, obstacles) {
   }
   return best;
 }
-function insideLabels(items) {
+function insideLabels(items, size = 11) {
   const areas = items.filter((x) => x.kind === "area"),
     fallback = [];
   const obstacles = items
@@ -724,19 +724,30 @@ function insideLabels(items) {
       return { x: p.x - 14, y: p.y - 28, w: 28, h: 32 };
     });
   for (const x of areas.length ? areas : items) {
-    const fit = x.feature ? fitAreaLabel(x, obstacles) : null;
+    const fit = x.feature ? fitAreaLabel(x, obstacles, size) : null;
     if (x.feature && !fit) {
       fallback.push(x);
       continue;
     }
     const pos = fit ? map.containerPointToLatLng(L.point(...fit.p)) : x.latlng;
     const html = fit
-      ? '<div><span class="main" style="font-size:11px">' +
+      ? '<div><span class="main" style="font-size:' +
+        size +
+        'px">' +
         fit.lines.map(esc).join("<br>") +
         "</span>" +
-        fit.sub.map((t) => '<span class="sub">' + esc(t) + "</span>").join("") +
+        fit.sub
+          .map(
+            (t) =>
+              '<span class="sub" style="font-size:' +
+              Math.max(7, size - 1) +
+              'px">' +
+              esc(t) +
+              "</span>",
+          )
+          .join("") +
         "</div>"
-      : labelHtml(x.data, 11);
+      : labelHtml(x.data, size);
     const w = fit ? fit.w : 100;
     labels.push(
       L.marker(pos, {
@@ -751,10 +762,10 @@ function insideLabels(items) {
     );
     if (fit) obstacles.push(fit.box);
   }
-  // An area too small for an 11px label gets an outside callout, never clipped text.
-  if (fallback.length) outsideLabels(fallback);
+  // Areas too small for the selected label size use an outside callout.
+  if (fallback.length) outsideLabels(fallback, size);
 }
-function outsideLabels(items) {
+function outsideLabels(items, size = 11) {
   const width = map.getSize().x;
   const validBounds = currentBounds?.isValid?.();
   const leftEdge = validBounds
@@ -830,7 +841,7 @@ function outsideLabels(items) {
           interactive: false,
           icon: L.divIcon({
             className: "mapLabel",
-            html: labelHtml(x.data, 11, true, x.side),
+            html: labelHtml(x.data, size, true, x.side),
             iconSize: [w, 84],
             iconAnchor: [x.side === "right" ? 0 : w, 0],
           }),
@@ -845,8 +856,9 @@ function applyLabels(items) {
     "--label-colour",
     getColour("labels", "#17212b"),
   );
-  if (labelMode === "inside") insideLabels(items);
-  if (labelMode === "outside") outsideLabels(items);
+  const size = Math.max(7, Math.min(20, Number($("#labelSize").value) || 11));
+  if (labelMode === "inside") insideLabels(items, size);
+  if (labelMode === "outside") outsideLabels(items, size);
 }
 function nameVariants(v) {
   let x = clean(v),
@@ -2014,6 +2026,7 @@ async function fetchJSONResponse(url, options) {
   return { json: async () => structuredClone(data) };
 }
 function syncControls() {
+  $("#labelSizeV").textContent = $("#labelSize").value + "px";
   $("#outlineWidthV").textContent = $("#outlineWidth").value + "px";
   $("#outlineColour .swatch").style.backgroundColor = getColour(
     "outline",
@@ -2059,6 +2072,10 @@ $("#themeBtn").onclick = () => {
   darkMap = !darkMap;
   setMapMode();
   syncControls();
+};
+$("#labelSize").oninput = () => {
+  syncControls();
+  if (current) applyLabels(renderedItems);
 };
 $("#outlineWidth").oninput = () => {
   syncControls();
