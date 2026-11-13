@@ -531,20 +531,11 @@ test("sample totals, geography codes and growth derivation stay consistent", () 
   }
   for (const [node, value] of incoming)
     if (outgoing.has(node)) assert.equal(outgoing.get(node), value, node);
-  assert.equal(
-    csv("child-death-causes").reduce((s, r) => s + +r[1], 0),
-    100,
-  );
   assert.ok(
     Math.abs(
       csv("uk-emissions").reduce((s, r) => s + +r[1], 0) - 373.400251224,
     ) < 0.0001,
   );
-  const areas = csv("housing-authorities");
-  assert.equal(new Set(areas.map((r) => r[0])).size, 25);
-  for (const r of areas) assert.match(r[0], /^E0[6789]\d{6}$/);
-  assert.equal(areas[0][1], "Kensington and Chelsea");
-  assert.equal(+areas[0][2], 21.49);
   for (const r of csv("growth-carbon"))
     assert.ok(
       Number.isFinite(+r[2]) &&
@@ -890,7 +881,7 @@ test("static sample catalog renders every non-map dataset with one external sour
   for (const [name, sets] of Object.entries(
     samplesContext.window.chartSampleSets,
   )) {
-    assert.equal(sets.length, name === "map" ? 6 : 5);
+    assert.equal(sets.length, { sankey: 4, donut: 3, map: 4 }[name] || 5);
     for (const set of sets) {
       assert.match(set.url, /^https:\/\//);
       assert.ok(set.reference && set.notes);
@@ -1141,4 +1132,104 @@ test("outside map labels choose the nearer edge, even when all fall on one side"
   context.items = [{ latlng: { x: 780, y: 100 }, data: {} }];
   vm.runInContext("outsideLabels(items)", context);
   assert.equal(placements[0].side, "right");
+});
+
+test("year headings are periods, never population observations", () => {
+  const h = harness("bar");
+  try {
+    h.w.chartBridge.setData(
+      utils.parseDelimited(
+        fs.readFileSync("assets/samples/france-identity-checks.csv", "utf8"),
+      ),
+    );
+    const points = vm.runInContext("parse()", h.context);
+    assert.ok(points.length > 0);
+    assert.ok(
+      points.every((p) => p.category !== "Population group" && p.value < 100),
+    );
+    assert.deepEqual([...new Set(points.map((p) => p.period))].sort(), [
+      "2016",
+      "2024",
+    ]);
+    assert.equal(h.w.document.querySelector("#period").max, "1");
+  } finally {
+    h.dom.window.close();
+  }
+});
+
+test("line label leaders are black independently of series colours", () => {
+  const h = harness("line");
+  try {
+    h.w.chartBridge.setData(samples.line);
+    const leaders = [...h.w.document.querySelectorAll(".seriesEndLeader")];
+    assert.ok(leaders.length);
+    assert.ok(leaders.every((p) => p.getAttribute("stroke") === "#000"));
+  } finally {
+    h.dom.window.close();
+  }
+});
+
+test("map prioritises countries over regions and offers both measures and continent groups", async () => {
+  const source = fs.readFileSync("assets/map.js", "utf8");
+  const context = {
+    M: [
+      ["Country", "Health spending", "Life expectancy", "Region"],
+      ["France", "5000", "82", "Europe"],
+      ["Germany", "6000", "81", "Europe"],
+      ["United States", "10000", "78", "North America"],
+    ],
+    clean: (x) => String(x ?? "").trim(),
+    norm: (x) =>
+      String(x ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, ""),
+    num: utils.number,
+    colourField: -1,
+    fetchJSONResponse: async (path) => ({
+      json: async () =>
+        JSON.parse(fs.readFileSync(path.replace("../", ""), "utf8")),
+    }),
+  };
+  vm.createContext(context);
+  vm.runInContext(
+    source.slice(
+      source.indexOf("const alias ="),
+      source.indexOf("function status"),
+    ),
+    context,
+  );
+  for (const f of ["headerScore", "fieldProfiles", "parse", "prepare"])
+    vm.runInContext(mapFunction(f), context);
+  const p = context.parse();
+  assert.equal(p.geo, "country");
+  assert.deepEqual(Array.from(context.numericFields), [1, 2]);
+  assert.deepEqual(Array.from(context.categoryFields), [3]);
+  const result = await context.prepare(p);
+  assert.equal(result.kind, "area");
+  assert.equal(result.gj.features.length, 3);
+  const catalog = { window: {} };
+  vm.runInNewContext(fs.readFileSync("assets/sample-sets.js", "utf8"), catalog);
+  for (const sample of catalog.window.chartSampleSets.scatter) {
+    const rows = utils.parseDelimited(fs.readFileSync(sample.csv, "utf8"));
+    const areas = await context.prepare({
+      geo: "country",
+      I: { country: 0 },
+      d: rows.slice(1),
+    });
+    assert.equal(
+      areas.missing.length,
+      0,
+      sample.id + ": " + areas.missing.join(", "),
+    );
+  }
+  context.M = [
+    ["Name", "Ratio"],
+    ["London", "12"],
+    ["North East", "4"],
+  ];
+  const regions = await context.prepare(context.parse());
+  assert.equal(regions.kind, "area");
+  assert.equal(regions.gj.features.length, 2);
 });

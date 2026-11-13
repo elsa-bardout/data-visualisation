@@ -55,6 +55,10 @@ test("sample titles use the chart header, sources stay outside parsed cells, and
     h.doc.querySelector("#sample").click();
     assert.equal(title.value, "Contacts and outcomes");
     assert.equal(info.reference, "2024 · people");
+    title.value = "Previous map sample";
+    frame.dataset.sampleTitle = "Previous map sample";
+    h.doc.querySelector('[data-mode="sankey"]').click();
+    assert.equal(title.value, "Contacts and outcomes");
     assert.ok(h.doc.querySelector("#grid tfoot #sampleSource a"));
     assert.ok(!passed.flat().includes("Complete cohort"));
     h.doc.querySelector("#clear").click();

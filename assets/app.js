@@ -345,10 +345,15 @@
       const doc = frames[mode].contentDocument;
       const title = doc?.querySelector("#diagramTitle,#title");
       if (title && !data.slice(1).some(filled)) title.value = "";
-      if (title && sampleSource && !title.value) {
+      if (
+        title &&
+        sampleSource &&
+        (!title.value || title.value === frames[mode].dataset.sampleTitle)
+      ) {
         title.value = sampleSource.title;
         title.dispatchEvent(new frames[mode].contentWindow.Event("input"));
       }
+      frames[mode].dataset.sampleTitle = sampleSource?.title || "";
       b.setSampleInfo?.(sampleSource);
       b.setData(table);
     } catch (e) {

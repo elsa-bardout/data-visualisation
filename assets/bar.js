@@ -170,6 +170,9 @@ function rows() {
 function looksHeader(r) {
   return (
     r.some((x) => Object.values(A).flat().includes(norm(x))) ||
+    (r.length > 1 &&
+      !Number.isFinite(num(r[0])) &&
+      r.slice(1).every((x) => /^(?:19|20)\d{2}$/.test(clean(x)))) ||
     r.filter((x) => Number.isFinite(num(x))).length < Math.max(1, r.length - 1)
   );
 }

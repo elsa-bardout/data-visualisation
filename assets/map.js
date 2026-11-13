@@ -42,6 +42,8 @@ const $ = (s) => document.querySelector(s),
   clean = (v) => String(v ?? "").trim(),
   norm = (v) =>
     clean(v)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, ""),
   num = ChartUtils.number,
@@ -65,7 +67,14 @@ const alias = {
   lon: ["LON", "LNG", "LONGITUDE"],
   ward: ["WARD", "WARDNAME", "WARD25NM"],
   wardcode: ["WARDCODE", "WD25CD"],
-  council: ["COUNCIL", "BOROUGH", "LOCALAUTHORITY", "LAD25NM"],
+  council: [
+    "COUNCIL",
+    "BOROUGH",
+    "LOCALAUTHORITY",
+    "COUNCILNAME",
+    "LOCALAUTHORITYNAME",
+    "LAD25NM",
+  ],
   councilcode: ["COUNCILCODE", "LAD25CD"],
   neighbourhood: ["NEIGHBOURHOOD", "NEIGHBORHOOD", "DISTRICT", "REGION"],
   location: ["LOCATION", "PLACE", "AREA", "ZONE", "GEOGRAPHY"],
@@ -80,7 +89,15 @@ const alias = {
     "PERCENT",
     "PERCENTAGE",
   ],
-  category: ["CATEGORY", "TYPE", "SERVICE", "GROUP", "SERIES"],
+  category: [
+    "CATEGORY",
+    "TYPE",
+    "SERVICE",
+    "GROUP",
+    "SERIES",
+    "CONTINENT",
+    "WORLDREGION",
+  ],
   label: ["LABEL", "NAME", "SITE", "FACILITY"],
   colour: ["COLOUR", "COLOR", "HEX"],
 };
@@ -191,10 +208,10 @@ function parse() {
                 ? "council"
                 : I.postcode >= 0
                   ? "postcode"
-                  : I.neighbourhood >= 0 || I.location >= 0
-                    ? "location"
-                    : I.country >= 0
-                      ? "country"
+                  : I.country >= 0
+                    ? "country"
+                    : I.neighbourhood >= 0 || I.location >= 0 || I.label >= 0
+                      ? "location"
                       : "",
     profiles = fieldProfiles(h, d),
     reserved = new Set(
@@ -878,9 +895,11 @@ function chooseLogicalFeatures(features, rows, ni, field, p) {
 }
 async function queryAreas(service, field, values) {
   let variants = [...new Set(values.flatMap(nameVariants))],
-    names = variants.map((v) => "'" + v.replace(/'/g, "''") + "'").join(",");
+    names = variants
+      .map((v) => "'" + v.toUpperCase().replace(/'/g, "''") + "'")
+      .join(",");
   if (!names) return null;
-  let where = field + " IN (" + names + ")",
+  let where = "UPPER(" + field + ") IN (" + names + ")",
     url = `https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/${service}/FeatureServer/0/query?where=${encodeURIComponent(where)}&outFields=*&returnGeometry=true&outSR=4326&f=geojson`;
   let gj = await fetchJSONResponse(url).then((x) => x.json());
   return Array.isArray(gj.features) ? gj : null;
@@ -950,15 +969,33 @@ async function geocodeRows(p, ni) {
   return coords.length ? { kind: "points", p, coords, missing } : null;
 }
 async function prepare(p) {
-  if (p.geo === "country" || p.geo === "state") {
+  if (["country", "state", "region"].includes(p.geo)) {
     const isState = p.geo === "state",
-      ni = isState ? p.I.state : p.I.country;
+      isRegion = p.geo === "region",
+      ni = isState ? p.I.state : isRegion ? p.I.neighbourhood : p.I.country;
     const gj = await fetchJSONResponse(
-      isState ? "../assets/us-states.geojson" : "../assets/countries.geojson",
+      isState
+        ? "../assets/us-states.geojson"
+        : isRegion
+          ? "../assets/england-regions.geojson"
+          : "../assets/countries.geojson",
     ).then((r) => r.json());
     const aliases = {
       UK: "UNITEDKINGDOM",
       GB: "UNITEDKINGDOM",
+      UNITEDSTATES: "UNITEDSTATESOFAMERICA",
+      CZECHIA: "CZECHREPUBLIC",
+      COTEDIVOIRE: "IVORYCOAST",
+      CABOVERDE: "CAPEVERDE",
+      MICRONESIACOUNTRY: "FEDERATEDSTATESOFMICRONESIA",
+      BAHAMAS: "THEBAHAMAS",
+      MACAO: "MACAU",
+      SINTMAARTENDUTCHPART: "SINTMAARTEN",
+      CONGO: "REPUBLICOFTHECONGO",
+      ESWATINI: "SWAZILAND",
+      SERBIA: "REPUBLICOFSERBIA",
+      TANZANIA: "UNITEDREPUBLICOFTANZANIA",
+      DEMOCRATICREPUBLICOFCONGO: "DEMOCRATICREPUBLICOFTHECONGO",
       USA: "UNITEDSTATESOFAMERICA",
       US: "UNITEDSTATESOFAMERICA",
     };
@@ -978,6 +1015,7 @@ async function prepare(p) {
         rowMap.set(norm(f.properties.NAME), row);
       } else missing.push(row[ni]);
     }
+    if (!features.length && p.optional) return null;
     if (!features.length)
       throw Error(
         "No countries matched. Use country names or two- or three-letter country codes.",
@@ -1055,9 +1093,27 @@ async function prepare(p) {
     if (a) return a;
   }
   if (p.geo === "location") {
-    let ni = p.I.neighbourhood >= 0 ? p.I.neighbourhood : p.I.location,
+    let ni =
+        p.I.neighbourhood >= 0
+          ? p.I.neighbourhood
+          : p.I.location >= 0
+            ? p.I.location
+            : p.I.label,
       a =
-        (await fetchArea(p, "council", ni)) || (await fetchArea(p, "ward", ni));
+        (await prepare({
+          ...p,
+          optional: true,
+          geo: "country",
+          I: { ...p.I, country: ni },
+        })) ||
+        (await prepare({
+          ...p,
+          optional: true,
+          geo: "region",
+          I: { ...p.I, neighbourhood: ni },
+        })) ||
+        (await fetchArea(p, "council", ni)) ||
+        (await fetchArea(p, "ward", ni));
     if (a) return a;
     let g = await geocodeRows(p, ni);
     if (g) return g;
@@ -2109,6 +2165,7 @@ window.chartBridge = {
   setData(rows) {
     hoverOff();
     $("#tip").textContent = "";
+    if (JSON.stringify(M[0]) !== JSON.stringify(rows?.[0])) colourField = -1;
     M = (rows || []).map((r) => r.slice());
     try {
       build();

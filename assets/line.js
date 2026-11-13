@@ -460,7 +460,7 @@ function draw(target, D, interactive = false) {
     .join("path")
     .attr("class", "seriesEndLeader")
     .attr("d", (d) => `M${X(d.point) + 4},${y(d.point.value)}L${iw + 8},${d.y}`)
-    .attr("stroke", (d) => C[d.name])
+    .attr("stroke", "#000")
     .attr("fill", "none");
   g.selectAll(".seriesEndLabel")
     .data(ends)

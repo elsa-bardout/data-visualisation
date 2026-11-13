@@ -10,12 +10,6 @@ Static snapshots prepared 10 November 2026. CSVs are bundled with the site; clic
 
 Complete country-route snapshot aggregated to UNHCR regions for readability, including unspecified origins. All 4,792 country records are available in the linked CSV and reconcile to all 170 asylum-country totals. Refugees under UNHCR’s mandate; excludes UNRWA refugees and other displaced populations. These are resident populations, not movements during the year.
 
-**Where does US government money go?** — Fiscal year 2025 · US$ billion
-
-[US Treasury](https://fiscaldata.treasury.gov/americas-finance-guide/federal-spending/) · [CSV](assets/samples/federal-functions.csv)
-
-Four selected federal functions and their expenditure subfunctions, from MTS table 9A. This is a subset, not all federal spending.
-
 **Which industries produce which greenhouse gases?** — 2024 · thousand tonnes CO₂ equivalent
 
 [ONS environmental accounts](https://www.ons.gov.uk/economy/environmentalaccounts/datasets/ukenvironmentalaccountsatmosphericemissionsgreenhousegasemissionsbyeconomicsectorandgasunitedkingdom) · [CSV](assets/samples/industry-gases.csv)
@@ -36,12 +30,6 @@ England cohort whose case closed or received a main-duty decision by March 2022.
 
 ## donut
 
-**Where does US federal spending go?** — Fiscal year 2025 · US$ billion
-
-[US Treasury](https://fiscaldata.treasury.gov/americas-finance-guide/federal-spending/) · [CSV](assets/samples/federal-outlays.csv)
-
-Net federal outlays only. Other functions includes negative credit and undistributed offsetting receipts so the slices sum to total net outlays; not total US public/private expenditure.
-
 **Which sectors produce the UK’s emissions?** — 2024 · million tonnes CO₂ equivalent
 
 [DESNZ](https://www.gov.uk/government/statistics/final-uk-greenhouse-gas-emissions-statistics-1990-to-2024) · [CSV](assets/samples/uk-emissions.csv)
@@ -59,12 +47,6 @@ World primary energy, measured as total energy supply in the 2026 Energy Institu
 [ONS Family Spending](https://www.ons.gov.uk/peoplepopulationandcommunity/personalandhouseholdfinances/expenditure/datasets/familyspendingworkbook1detailedexpenditureandtrends) · [CSV](assets/samples/household-spending.csv)
 
 Table A1: mutually exclusive top-level expenditure groups, including other expenditure. Published averages are rounded; housing is net of benefits.
-
-**What causes most deaths among young children?** — World, 2024 · % of under-five deaths
-
-[UNICEF / UN IGME](https://data.unicef.org/topic/child-survival/under-five-mortality/) · [CSV](assets/samples/child-death-causes.csv)
-
-Three leading causes named in UNICEF’s summary. All other causes is 100 minus those rounded shares; it includes malaria, diarrhoea and other causes.
 
 ## bar
 
@@ -164,12 +146,6 @@ Changes calculated as (this year / previous year − 1) × 100, requiring consec
 
 ## map
 
-**Where is extreme poverty most prevalent?** — 2018 · % below $3/day in 2021 purchasing-power prices
-
-[World Bank via OWID](https://ourworldindata.org/grapher/share-of-population-in-extreme-poverty) · [CSV](assets/samples/extreme-poverty.csv)
-
-Common-year snapshot of countries with data and bundled boundaries; missing countries are not zero.
-
 **Where do people lack clean cooking fuels?** — 2024 · % without clean cooking access
 
 [WHO via OWID](https://ourworldindata.org/grapher/access-to-clean-fuels-and-technologies-for-cooking) · [CSV](assets/samples/clean-cooking.csv)
@@ -188,12 +164,6 @@ Common-year snapshot of countries with data and bundled boundaries; missing coun
 
 Dated summary, not current legal or medical advice. X means an exception is listed, subject to conditions. Later-limit category does not mean unrestricted access. Consult the linked tracker for court orders and detailed exceptions.
 
-**Which English places have the greatest housing affordability problem?** — 2025 · house-price-to-earnings ratio
-
-[ONS](https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/housepriceexistingdwellingstoresidencebasedearningsratio) · [CSV](assets/samples/housing-authorities.csv)
-
-The 25 English local authorities with the highest available existing-dwelling median price / residence-based median annual earnings ratios. Missing or suppressed ratios excluded.
-
 **Camden wards and public libraries** — Directory checked 10 November 2026
 
 [Camden Council](https://www.camden.gov.uk/libraries-opening-times) · [CSV](assets/samples/camden-libraries.csv)
@@ -209,3 +179,7 @@ Download source files using `assets/samples/provenance.json` into `.review-tools
 All catalog source pages were checked. The broken UNHCR data-finder link was replaced with the official dataset documentation. UNICEF and Camden block automated HTTP clients but their relevant pages were verified separately. The unavailable Keats website link was removed; Camden’s community-library directory identifies Keats.
 
 The refugee sample now covers all reported country routes, aggregated by UNHCR region to keep the chart readable. [Complete country-route CSV (4,792 records)](assets/samples/refugees-all-country-routes.csv). For rebuilding, fetch every page of the UNHCR query in provenance.json, concatenate its data, and preserve the pagination record with has_next set to false only after all 4,962 records have been retrieved.
+
+English region boundaries: [ONS December 2024 generalised boundaries](https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Regions_December_2024_Boundaries_EN_BGC/FeatureServer/0), bundled locally. Contains public sector information licensed under the Open Government Licence v3.0.
+
+Small countries and territories supplement the original country map using [Natural Earth 1:50m public-domain boundaries](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_50m_admin_0_countries.geojson).

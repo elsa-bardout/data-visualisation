@@ -19,16 +19,6 @@ window.chartSampleSets = {
       ],
     },
     {
-      id: "federal-functions",
-      title: "Where does US government money go?",
-      csv: "assets/samples/federal-functions.csv",
-      source: "US Treasury",
-      url: "https://fiscaldata.treasury.gov/americas-finance-guide/federal-spending/",
-      reference: "Fiscal year 2025 · US$ billion",
-      notes:
-        "Four selected federal functions and their expenditure subfunctions, from MTS table 9A. This is a subset, not all federal spending.",
-    },
-    {
       id: "industry-gases",
       title: "Which industries produce which greenhouse gases?",
       csv: "assets/samples/industry-gases.csv",
@@ -61,16 +51,6 @@ window.chartSampleSets = {
   ],
   donut: [
     {
-      id: "federal-outlays",
-      title: "Where does US federal spending go?",
-      csv: "assets/samples/federal-outlays.csv",
-      source: "US Treasury",
-      url: "https://fiscaldata.treasury.gov/americas-finance-guide/federal-spending/",
-      reference: "Fiscal year 2025 · US$ billion",
-      notes:
-        "Net federal outlays only. Other functions includes negative credit and undistributed offsetting receipts so the slices sum to total net outlays; not total US public/private expenditure.",
-    },
-    {
       id: "uk-emissions",
       title: "Which sectors produce the UK’s emissions?",
       csv: "assets/samples/uk-emissions.csv",
@@ -99,16 +79,6 @@ window.chartSampleSets = {
       reference: "FYE 2025 · £ per household per week",
       notes:
         "Table A1: mutually exclusive top-level expenditure groups, including other expenditure. Published averages are rounded; housing is net of benefits.",
-    },
-    {
-      id: "child-death-causes",
-      title: "What causes most deaths among young children?",
-      csv: "assets/samples/child-death-causes.csv",
-      source: "UNICEF / UN IGME",
-      url: "https://data.unicef.org/topic/child-survival/under-five-mortality/",
-      reference: "World, 2024 · % of under-five deaths",
-      notes:
-        "Three leading causes named in UNICEF’s summary. All other causes is 100 minus those rounded shares; it includes malaria, diarrhoea and other causes.",
     },
   ],
   bar: [
@@ -296,16 +266,6 @@ window.chartSampleSets = {
   ],
   map: [
     {
-      id: "extreme-poverty",
-      title: "Where is extreme poverty most prevalent?",
-      csv: "assets/samples/extreme-poverty.csv",
-      source: "World Bank via OWID",
-      url: "https://ourworldindata.org/grapher/share-of-population-in-extreme-poverty",
-      reference: "2018 · % below $3/day in 2021 purchasing-power prices",
-      notes:
-        "Common-year snapshot of countries with data and bundled boundaries; missing countries are not zero.",
-    },
-    {
       id: "clean-cooking",
       title: "Where do people lack clean cooking fuels?",
       csv: "assets/samples/clean-cooking.csv",
@@ -334,17 +294,6 @@ window.chartSampleSets = {
       reference: "16 October 2026 · policy snapshot",
       notes:
         "Dated summary, not current legal or medical advice. X means an exception is listed, subject to conditions. Later-limit category does not mean unrestricted access. Consult the linked tracker for court orders and detailed exceptions.",
-    },
-    {
-      id: "housing-authorities",
-      title:
-        "Which English places have the greatest housing affordability problem?",
-      csv: "assets/samples/housing-authorities.csv",
-      source: "ONS",
-      url: "https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/housepriceexistingdwellingstoresidencebasedearningsratio",
-      reference: "2025 · house-price-to-earnings ratio",
-      notes:
-        "The 25 English local authorities with the highest available existing-dwelling median price / residence-based median annual earnings ratios. Missing or suppressed ratios excluded.",
     },
     {
       id: "camden-libraries",
